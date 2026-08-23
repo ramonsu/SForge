@@ -90,7 +90,7 @@ SForge_V1_PLAN.md         V1 设计基线
 需要 Python 3.10 或更新版本。在 PowerShell 中：
 
 ```powershell
-cd "D:\Desktop\创作\SForge"
+cd "..\SForge"
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
