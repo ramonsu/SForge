@@ -1,0 +1,15 @@
+{
+  "id": "novel_writing",
+  "initial_state": "writing",
+  "states": {
+    "writing": {
+      "allowed_capabilities": [
+        "echo",
+        "read_text",
+        "write_text"
+      ],
+      "memory_scope": "workflow",
+      "context_sources": []
+    }
+  }
+}

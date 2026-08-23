@@ -1,0 +1,15 @@
+{
+  "id": "general_task",
+  "initial_state": "active",
+  "states": {
+    "active": {
+      "allowed_capabilities": [
+        "echo",
+        "read_text",
+        "write_text"
+      ],
+      "memory_scope": "task",
+      "context_sources": []
+    }
+  }
+}
