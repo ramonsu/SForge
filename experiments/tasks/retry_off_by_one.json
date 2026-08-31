@@ -1,0 +1,12 @@
+{
+  "id": "retry_off_by_one",
+  "title": "Locate retry-count off-by-one",
+  "suite": "capability",
+  "category": "boundary-condition diagnosis",
+  "request": "`for attempt in range(max_retries): call()` is documented as one initial attempt plus max_retries retries. For max_retries=3 it currently calls at most three times. Diagnose and propose tests for 0 and 3 retries. Do not use tools.",
+  "required_findings": [
+    {"id": "attempt_count", "any_of": ["max_retries + 1", "four attempts", "4 attempts", "初次尝试", "总共 4 次"], "weight": 0.55},
+    {"id": "zero_retry_boundary", "any_of": ["max_retries=0", "max_retries = 0", "zero retries", "0 次重试"], "weight": 0.45}
+  ],
+  "forbidden_claims": [{"id": "three_is_correct", "any_of": ["three calls is correct", "三次调用是正确的"], "penalty": 0.7}]
+}

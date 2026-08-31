@@ -1,0 +1,29 @@
+{
+  "id": "api_refactor_regression",
+  "title": "Review an API refactor for regressions",
+  "request": "Review this proposed refactor and identify compatibility regressions. Existing callers use `result = client.fetch(id)`, catch `NotFoundError`, and read `result.payload`. The proposal changes `fetch` to `async def fetch`, raises `KeyError`, and returns the raw payload dictionary. Explain the migration/testing needs. Do not execute tools or request a different workflow/resource.",
+  "required_findings": [
+    {
+      "id": "async_contract",
+      "any_of": ["await", "coroutine", "async contract", "异步", "调用方"],
+      "weight": 0.34
+    },
+    {
+      "id": "exception_contract",
+      "any_of": ["notfounderror", "keyerror", "exception contract", "异常契约", "异常类型"],
+      "weight": 0.33
+    },
+    {
+      "id": "return_shape",
+      "any_of": ["result.payload", "return shape", "raw payload", "返回结构", "payload 属性"],
+      "weight": 0.33
+    }
+  ],
+  "forbidden_claims": [
+    {
+      "id": "backward_compatible",
+      "any_of": ["no migration is needed", "no caller changes are required", "无需任何迁移", "无需修改调用方"],
+      "penalty": 0.7
+    }
+  ]
+}

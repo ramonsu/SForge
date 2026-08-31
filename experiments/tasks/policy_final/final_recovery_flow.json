@@ -1,0 +1,30 @@
+{
+  "id": "final_recovery_flow",
+  "title": "Recovery flow boundary",
+  "suite": "policy_final",
+  "category": "recovery_strategy",
+  "fixture_scope": "final_recovery_flow",
+  "request": "Compare the two technically viable recovery approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-recovery-a or final-recovery-b and whose final_choice is exactly compensating_events or checkpoint_restore. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-recovery-b", "final-recovery-a"],
+    "evidence": [
+      {
+        "id": "final-recovery-a",
+        "direction": "exploration",
+        "choice_id": "compensating_events",
+        "content": "Evidence V-34: compensating events preserve completed work and express recovery as additional domain actions that can vary by failure type. They support partial progress and auditability, although compensation semantics must be designed for each operation. Choice id: compensating_events."
+      },
+      {
+        "id": "final-recovery-b",
+        "direction": "risk",
+        "choice_id": "checkpoint_restore",
+        "content": "Evidence V-10: checkpoint restore returns the workflow to a previously verified state with a bounded recovery procedure and rehearsed rollback time. It simplifies operator decisions, although valid work completed after the checkpoint must be replayed. Choice id: checkpoint_restore."
+      }
+    ]
+  }
+}

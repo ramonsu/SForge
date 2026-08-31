@@ -1,15 +1,54 @@
 {
   "id": "general_task",
+  "description": "A general-purpose cyclic cognitive environment",
   "initial_state": "active",
   "states": {
     "active": {
+      "context": "Solve the task by choosing small, verifiable actions.",
+      "goal": "Satisfy the request with explicit constraints and evidence.",
       "allowed_capabilities": [
-        "echo",
-        "read_text",
-        "write_text"
+        "filesystem.read",
+        "filesystem.write",
+        "filesystem.list"
       ],
-      "memory_scope": "task",
-      "context_sources": []
+      "memory_scope": ["task"],
+      "memory_write_scope": "task",
+      "memory_hints": ["requirement", "result", "verification"],
+      "context_sources": [],
+      "evaluation": {
+        "criteria": [
+          "requirements are satisfied",
+          "effects are verified",
+          "uncertainty is explicit"
+        ]
+      }
+    },
+    "audit": {
+      "context": "Inspect evidence, inconsistencies, omissions and operational risk.",
+      "goal": "Determine whether the result is safe and complete.",
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.list"
+      ],
+      "memory_scope": ["task", "audit_memory"],
+      "memory_write_scope": "audit_memory",
+      "memory_hints": ["error", "failure", "risk", "evidence"],
+      "context_sources": [],
+      "evaluation": {
+        "criteria": [
+          "claims have evidence",
+          "contradictions are identified",
+          "risks are actionable"
+        ]
+      }
     }
+  },
+  "transitions": {
+    "active": [
+      {"condition": "audit_requested", "target": "audit"}
+    ],
+    "audit": [
+      {"condition": "changes_required", "target": "active"}
+    ]
   }
 }

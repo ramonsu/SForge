@@ -1,0 +1,30 @@
+{
+  "id": "final_representation_tradeoff",
+  "title": "Representation tradeoff boundary",
+  "suite": "policy_final",
+  "category": "performance_maintainability",
+  "fixture_scope": "final_representation_tradeoff",
+  "request": "Compare the two technically viable representation approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-representation-a or final-representation-b and whose final_choice is exactly profiled_specialization or uniform_model. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-representation-b", "final-representation-a"],
+    "evidence": [
+      {
+        "id": "final-representation-a",
+        "direction": "risk",
+        "choice_id": "profiled_specialization",
+        "content": "Evidence M-20: a profiled specialized representation targets the measured hot path while retaining the current model elsewhere. It offers a bounded performance change with direct benchmarks, although two representations require conversion tests. Choice id: profiled_specialization."
+      },
+      {
+        "id": "final-representation-b",
+        "direction": "exploration",
+        "choice_id": "uniform_model",
+        "content": "Evidence M-44: a uniform representation keeps one maintainable data model and relies on batching and layout-aware iteration for broad performance gains. It avoids conversion boundaries, although peak throughput may remain below specialization. Choice id: uniform_model."
+      }
+    ]
+  }
+}

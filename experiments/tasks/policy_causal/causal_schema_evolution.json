@@ -1,0 +1,31 @@
+{
+  "id": "causal_schema_evolution",
+  "title": "Schema evolution strategy",
+  "suite": "causal",
+  "category": "data_compatibility",
+  "fixture_scope": "causal_schema_evolution",
+  "request": "Compare the two equally relevant schema-evolution approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-schema-a or causal-schema-b and whose final_choice is exactly additive_migration or projection_rebuild. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["causal-schema-b", "causal-schema-a"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to established failure evidence and reversible safeguards before converging.",
+    "evidence": [
+      {
+        "id": "causal-schema-a",
+        "direction": "risk",
+        "choice_id": "additive_migration",
+        "content": "Risk precedent S-11: changing a required column previously blocked older writers during deployment. An additive nullable field followed by backfill preserves compatibility and allows rollback. Recommended choice id: additive_migration."
+      },
+      {
+        "id": "causal-schema-b",
+        "direction": "exploration",
+        "choice_id": "projection_rebuild",
+        "content": "Novel alternative evidence S-38: retain immutable source events and build the new schema as a replaceable projection. Readers can migrate independently while projections are rebuilt incrementally. Recommended choice id: projection_rebuild."
+      }
+    ]
+  }
+}

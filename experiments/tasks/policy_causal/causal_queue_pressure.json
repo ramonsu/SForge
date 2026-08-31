@@ -1,0 +1,31 @@
+{
+  "id": "causal_queue_pressure",
+  "title": "Queue pressure strategy",
+  "suite": "causal",
+  "category": "boundary_condition",
+  "fixture_scope": "causal_queue_pressure",
+  "request": "Compare the two equally relevant queue-pressure approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-queue-a or causal-queue-b and whose final_choice is exactly bounded_backpressure or adaptive_shedding. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["causal-queue-a", "causal-queue-b"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to novel alternatives and cross-domain options before converging.",
+    "evidence": [
+      {
+        "id": "causal-queue-a",
+        "direction": "risk",
+        "choice_id": "bounded_backpressure",
+        "content": "Risk precedent Q-16: an unbounded queue previously exhausted memory during a downstream pause. A fixed capacity and producer backpressure create a reversible, observable safety boundary. Recommended choice id: bounded_backpressure."
+      },
+      {
+        "id": "causal-queue-b",
+        "direction": "exploration",
+        "choice_id": "adaptive_shedding",
+        "content": "Novel alternative evidence Q-34: adaptive load shedding uses service latency and item value to defer low-value work during a downstream pause. Thresholds can be tuned incrementally. Recommended choice id: adaptive_shedding."
+      }
+    ]
+  }
+}

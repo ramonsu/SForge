@@ -1,0 +1,13 @@
+{
+  "id": "timezone_test_design",
+  "title": "Design deterministic DST-boundary tests",
+  "suite": "capability",
+  "category": "test design",
+  "request": "Design deterministic tests for a scheduler that runs at 02:30 local time across daylight-saving transitions. Tests must not depend on the machine timezone or wall clock. State the key cases and setup. Do not use tools.",
+  "required_findings": [
+    {"id": "fixed_timezone", "any_of": ["iana", "zoneinfo", "explicit timezone", "明确时区", "固定时区"], "weight": 0.35},
+    {"id": "nonexistent_ambiguous", "any_of": ["nonexistent", "ambiguous", "fold", "不存在时间", "重复时间", "歧义"], "weight": 0.4},
+    {"id": "frozen_clock", "any_of": ["fake clock", "inject clock", "freeze time", "注入时钟", "冻结时间"], "weight": 0.25}
+  ],
+  "forbidden_claims": [{"id": "system_tz", "any_of": ["use the system timezone", "使用系统时区即可"], "penalty": 0.5}]
+}

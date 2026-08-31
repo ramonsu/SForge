@@ -1,0 +1,9 @@
+{
+  "description": "The project environment mounted by this SForge runtime.",
+  "retrieval": {
+    "sources": ["architecture_docs", "source_code", "test_results", "decisions", "task_history"],
+    "prefer": ["active_task_related", "unresolved_failures", "recent_changes"]
+  },
+  "knowledge_references": ["README.md", "v1_6_PLAN.md", "workflows/"],
+  "local_skills": ["evidence_review"]
+}

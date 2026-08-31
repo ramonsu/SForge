@@ -1,0 +1,13 @@
+{
+  "id": "async_dependency_impact",
+  "title": "Trace synchronous-to-asynchronous dependency impact",
+  "suite": "capability",
+  "category": "dependency impact",
+  "request": "A shared library changes `load_config()` from sync to async. It is used by constructors, CLI startup, a WSGI app, unit-test fixtures, and one existing async service. Identify the main dependency impacts and a migration approach. Do not use tools.",
+  "required_findings": [
+    {"id": "call_chain", "any_of": ["call chain", "propagate async", "调用链", "向上传播"], "weight": 0.35},
+    {"id": "sync_boundaries", "any_of": ["wsgi", "constructor", "cli", "同步边界"], "weight": 0.35},
+    {"id": "adapter_migration", "any_of": ["adapter", "wrapper", "staged migration", "适配器", "分阶段"], "weight": 0.3}
+  ],
+  "forbidden_claims": [{"id": "just_add_await", "any_of": ["just add await everywhere", "只需到处加 await"], "penalty": 0.5}]
+}

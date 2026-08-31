@@ -1,0 +1,30 @@
+{
+  "id": "final_test_oracle",
+  "title": "Test oracle boundary",
+  "suite": "policy_final",
+  "category": "test_strategy",
+  "fixture_scope": "final_test_oracle",
+  "request": "Compare the two technically viable test strategies in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-test-a or final-test-b and whose final_choice is exactly curated_boundaries or differential_generation. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-test-b", "final-test-a"],
+    "evidence": [
+      {
+        "id": "final-test-a",
+        "direction": "risk",
+        "choice_id": "curated_boundaries",
+        "content": "Evidence T-18: curated boundary cases preserve every previously observed failure with stable assertions and concise diagnostics. They make release verification predictable, although coverage grows only when engineers identify and encode another meaningful boundary. Choice id: curated_boundaries."
+      },
+      {
+        "id": "final-test-b",
+        "direction": "exploration",
+        "choice_id": "differential_generation",
+        "content": "Evidence T-45: differential generation compares old and new implementations across varied structured inputs and retains disagreeing seeds. It can discover boundaries not anticipated by maintainers, although failures require minimization before they become durable diagnostics. Choice id: differential_generation."
+      }
+    ]
+  }
+}

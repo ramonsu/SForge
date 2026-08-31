@@ -1,0 +1,29 @@
+{
+  "id": "cache_design_choice",
+  "title": "Choose a cache design under concurrency",
+  "request": "Choose one design for a read-heavy service where entries expire and 200 workers may request the same missing key. A: process-local cache with no invalidation. B: shared cache with TTL only. C: shared cache with TTL, request coalescing/single-flight, and explicit invalidation on writes. State the choice and the main residual risk. Do not execute tools or request a different workflow/resource.",
+  "required_findings": [
+    {
+      "id": "choose_c",
+      "any_of": ["option c", "design c", "choose c", "选择 c", "方案 c"],
+      "weight": 0.45
+    },
+    {
+      "id": "stampede_control",
+      "any_of": ["stampede", "single-flight", "singleflight", "request coalescing", "缓存击穿", "请求合并"],
+      "weight": 0.3
+    },
+    {
+      "id": "residual_risk",
+      "any_of": ["residual risk", "invalidation race", "stale", "failure mode", "剩余风险", "失效竞态", "陈旧数据"],
+      "weight": 0.25
+    }
+  ],
+  "forbidden_claims": [
+    {
+      "id": "zero_risk",
+      "any_of": ["eliminates all risk", "没有任何风险", "零风险"],
+      "penalty": 0.5
+    }
+  ]
+}

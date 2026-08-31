@@ -1,0 +1,19 @@
+{
+  "id": "mechanism_profession_sentinel",
+  "title": "Use project-specific cache-miss semantics",
+  "suite": "mechanism",
+  "category": "profession-sensitive",
+  "fixture_scope": "profession_sentinel",
+  "request": "A project cache currently checks `if value is None: load()`. Decide whether that is correct for this project. Use and cite any project/professional evidence identifier present in context; do not invent an identifier. Explain the precise replacement when evidence supports one. Do not use tools.",
+  "required_findings": [
+    {"id": "se17_evidence", "any_of": ["se-17"], "weight": 0.35},
+    {"id": "none_is_valid", "any_of": ["none is a valid", "none 是有效", "none 也是有效"], "weight": 0.3},
+    {"id": "missing_identity", "any_of": ["is missing", "missing sentinel", "missing 哨兵", "missing 标记"], "weight": 0.35}
+  ],
+  "forbidden_claims": [{"id": "invented_source", "any_of": ["se-99", "se-42"], "penalty": 0.5}],
+  "mechanism": {
+    "kind": "profession_sensitive",
+    "memory_ids": ["mechanism-profession-missing-sentinel"],
+    "evidence_patterns": ["se-17", "missing sentinel", "missing 哨兵"]
+  }
+}

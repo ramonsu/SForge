@@ -1,0 +1,31 @@
+{
+  "id": "causal_dependency_migration",
+  "title": "Dependency migration strategy",
+  "suite": "causal",
+  "category": "dependency_impact",
+  "fixture_scope": "causal_dependency_migration",
+  "request": "Compare the two equally relevant dependency-migration approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-dependency-a or causal-dependency-b and whose final_choice is exactly event_projection or compatibility_adapter. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["causal-dependency-b", "causal-dependency-a"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to novel alternatives and cross-domain options before converging.",
+    "evidence": [
+      {
+        "id": "causal-dependency-a",
+        "direction": "exploration",
+        "choice_id": "event_projection",
+        "content": "Novel alternative evidence D-31: publish dependency changes as an event stream so consumers can adopt asynchronous projections independently. The synchronous contract remains available during staged adoption. Recommended choice id: event_projection."
+      },
+      {
+        "id": "causal-dependency-b",
+        "direction": "risk",
+        "choice_id": "compatibility_adapter",
+        "content": "Risk precedent D-08: a direct asynchronous migration previously changed exception timing for existing consumers. A compatibility adapter preserves the synchronous contract and provides a reversible transition. Recommended choice id: compatibility_adapter."
+      }
+    ]
+  }
+}

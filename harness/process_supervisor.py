@@ -9,6 +9,9 @@ from pathlib import Path
 from threading import RLock
 from uuid import uuid4
 
+from harness.errors import AgentWorkerError
+from harness.models import ReasoningResponse, TokenUsage
+
 
 class AgentProcessSupervisor:
     def __init__(self):
@@ -32,27 +35,53 @@ class AgentProcessSupervisor:
             self._processes[process_id] = process
         return process_id
 
-    def reason(self, process_id: str, messages: list[dict]) -> str:
+    def reason(
+        self, process_id: str, messages: list[dict]
+    ) -> ReasoningResponse:
         with self._lock:
             process = self._processes.get(process_id)
-            if process is None or process.poll() is not None:
-                raise RuntimeError("Agent Instance 进程不存在或已退出")
-            if process.stdin is None or process.stdout is None:
-                raise RuntimeError("Agent Instance 通信通道不可用")
+        if process is None or process.poll() is not None:
+            raise RuntimeError("Agent Instance 进程不存在或已退出")
+        if process.stdin is None or process.stdout is None:
+            raise RuntimeError("Agent Instance 通信通道不可用")
+        try:
             process.stdin.write(
                 json.dumps({"command": "reason", "messages": messages}, ensure_ascii=False)
                 + "\n"
             )
             process.stdin.flush()
             line = process.stdout.readline()
+        except (BrokenPipeError, OSError, ValueError) as exc:
+            raise RuntimeError("Agent Instance 通信中断") from exc
         if not line:
             raise RuntimeError("Agent Instance 未返回推理结果")
         response = json.loads(line)
         if not response.get("success"):
             stage = response.get("stage", "unknown")
             error = response.get("error", "Agent Instance 推理失败")
-            raise RuntimeError(f"Agent Worker {stage} 失败: {error}")
-        return str(response.get("content", ""))
+            if isinstance(error, dict):
+                message = str(error.get("message") or "Agent Instance 推理失败")
+                error_type = str(error.get("type") or "AgentWorkerError")
+                provider_error_type = error.get("provider_error_type")
+                status_code = error.get("status_code")
+            else:
+                message = str(error)
+                error_type = "AgentWorkerError"
+                provider_error_type = None
+                status_code = None
+            raise AgentWorkerError(
+                f"Agent Worker {stage} 失败: {message}",
+                stage=str(stage),
+                error_type=str(provider_error_type or error_type),
+                status_code=(
+                    int(status_code) if isinstance(status_code, int) else None
+                ),
+                error_message=message,
+            )
+        return ReasoningResponse(
+            str(response.get("content", "")),
+            TokenUsage.from_dict(response.get("usage")),
+        )
 
     def terminate(self, process_id: str | None) -> None:
         if process_id is None:

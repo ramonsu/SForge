@@ -1,0 +1,31 @@
+{
+  "id": "causal_concurrency_model",
+  "title": "Concurrency model strategy",
+  "suite": "causal",
+  "category": "concurrency_design",
+  "fixture_scope": "causal_concurrency_model",
+  "request": "Compare the two equally relevant concurrency approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-concurrency-a or causal-concurrency-b and whose final_choice is exactly actor_partitioning or lock_protocol. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["causal-concurrency-a", "causal-concurrency-b"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to established failure evidence and reversible safeguards before converging.",
+    "evidence": [
+      {
+        "id": "causal-concurrency-a",
+        "direction": "exploration",
+        "choice_id": "actor_partitioning",
+        "content": "Novel alternative evidence K-33: partition mutable state by actor ownership so updates are serialized within each key while independent keys progress concurrently. Partitions can be introduced incrementally. Recommended choice id: actor_partitioning."
+      },
+      {
+        "id": "causal-concurrency-b",
+        "direction": "risk",
+        "choice_id": "lock_protocol",
+        "content": "Risk precedent K-09: inconsistent lock ordering previously produced a deadlock under mixed updates. A documented lock protocol and bounded acquisition timeout provide a reversible safeguard. Recommended choice id: lock_protocol."
+      }
+    ]
+  }
+}

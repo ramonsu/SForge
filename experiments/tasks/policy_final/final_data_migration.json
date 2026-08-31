@@ -1,0 +1,30 @@
+{
+  "id": "final_data_migration",
+  "title": "Data migration boundary",
+  "suite": "policy_final",
+  "category": "migration",
+  "fixture_scope": "final_data_migration",
+  "request": "Compare the two technically viable data migration approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-migration-a or final-migration-b and whose final_choice is exactly event_transform or verified_dual_write. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-migration-b", "final-migration-a"],
+    "evidence": [
+      {
+        "id": "final-migration-a",
+        "direction": "exploration",
+        "choice_id": "event_transform",
+        "content": "Evidence G-36: an immutable event transform builds the new projection from the historical stream and permits alternative projections to be replayed. It avoids mutating the source dataset, although transformation completeness must be demonstrated. Choice id: event_transform."
+      },
+      {
+        "id": "final-migration-b",
+        "direction": "risk",
+        "choice_id": "verified_dual_write",
+        "content": "Evidence G-13: verified dual-write compares old and new records during a bounded migration window before switching reads. It provides direct parity measurements and an immediate fallback, although temporary write coordination adds operational load. Choice id: verified_dual_write."
+      }
+    ]
+  }
+}

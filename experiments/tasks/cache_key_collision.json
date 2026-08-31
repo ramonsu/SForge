@@ -1,0 +1,13 @@
+{
+  "id": "cache_key_collision",
+  "title": "Locate composite cache-key collision",
+  "suite": "capability",
+  "category": "bug localization",
+  "request": "A cache key is built as `tenant + ':' + user`. Inputs may contain colons. Show one collision, propose an unambiguous encoding, and a regression test. Do not use tools.",
+  "required_findings": [
+    {"id": "collision_example", "any_of": ["a:b:c", "collision", "same key", "碰撞", "相同键"], "weight": 0.4},
+    {"id": "unambiguous_encoding", "any_of": ["tuple", "length prefix", "json", "escaping", "元组", "长度前缀", "转义"], "weight": 0.35},
+    {"id": "distinct_pair_test", "any_of": ["two pairs", "distinct inputs", "两组", "不同输入"], "weight": 0.25}
+  ],
+  "forbidden_claims": [{"id": "delimiter_safe", "any_of": ["colon makes it unique", "冒号保证唯一"], "penalty": 0.6}]
+}

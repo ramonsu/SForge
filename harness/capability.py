@@ -56,7 +56,9 @@ class CapabilityRegistry:
             raise CapabilityNotFoundError(f"Capability 不存在: {capability_id}") from exc
 
     def descriptors(self, capability_ids: frozenset[str] | None = None) -> tuple[CapabilityDescriptor, ...]:
-        ids = sorted(capability_ids or self._capabilities)
+        ids = sorted(
+            self._capabilities if capability_ids is None else capability_ids
+        )
         return tuple(self.get(capability_id).descriptor for capability_id in ids)
 
     def validate_input(self, request: ActionRequest) -> None:
@@ -73,6 +75,12 @@ class CapabilityRegistry:
         expected = schema.get("type")
         if expected and not cls._matches_type(value, expected):
             raise InvalidActionArgumentsError(f"Capability {label} 类型应为 {expected}")
+        if expected == "array":
+            item_schema = schema.get("items")
+            if item_schema:
+                for index, item in enumerate(value):
+                    cls._validate_schema(item, item_schema, f"{label}[{index}]")
+            return
         if expected != "object":
             return
         missing = set(schema.get("required", [])) - set(value)

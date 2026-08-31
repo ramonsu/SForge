@@ -6,6 +6,10 @@ import json
 import sys
 
 from agent.llm_client import LLMClient
+from harness.errors import (
+    JSONModePromptConfigurationError,
+    LLMProviderError,
+)
 
 
 def main() -> int:
@@ -31,12 +35,26 @@ def main() -> int:
                 raise ValueError("未知 Agent Worker 命令")
             llm = llm or LLMClient()
             response = llm.chat(request["messages"])
-            result = {"success": True, "content": response.content or ""}
+            result = {
+                "success": True,
+                "content": response.content,
+                "usage": response.usage.as_dict(),
+            }
         except Exception as exc:
+            stage = "reasoning"
+            if isinstance(exc, LLMProviderError):
+                stage = "api"
+            elif isinstance(exc, JSONModePromptConfigurationError):
+                stage = "configuration"
             result = {
                 "success": False,
-                "stage": "reasoning",
-                "error": str(exc),
+                "stage": stage,
+                "error": {
+                    "type": type(exc).__name__,
+                    "message": str(exc),
+                    "status_code": getattr(exc, "status_code", None),
+                    "provider_error_type": getattr(exc, "error_type", None),
+                },
             }
         print(json.dumps(result, ensure_ascii=False), flush=True)
     return 0

@@ -1,0 +1,31 @@
+{
+  "id": "causal_cache_invalidation",
+  "title": "Cache invalidation strategy",
+  "suite": "causal",
+  "category": "architectural_tradeoff",
+  "fixture_scope": "causal_cache_invalidation",
+  "request": "Compare the two equally relevant cache approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-cache-a or causal-cache-b and whose final_choice is exactly guarded_invalidation or versioned_keys. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["causal-cache-b", "causal-cache-a"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to established failure evidence and reversible safeguards before converging.",
+    "evidence": [
+      {
+        "id": "causal-cache-a",
+        "direction": "risk",
+        "choice_id": "guarded_invalidation",
+        "content": "Risk precedent C-14: eager cache invalidation previously created a read-after-write race during concurrent updates. A guarded invalidation path preserves version checks and permits an immediate rollback. Recommended choice id: guarded_invalidation."
+      },
+      {
+        "id": "causal-cache-b",
+        "direction": "exploration",
+        "choice_id": "versioned_keys",
+        "content": "Novel alternative evidence C-29: immutable versioned cache keys let old and new readers coexist during concurrent updates. Observed versions can be retired incrementally after traffic stabilizes. Recommended choice id: versioned_keys."
+      }
+    ]
+  }
+}

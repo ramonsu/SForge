@@ -1,0 +1,31 @@
+{
+  "id": "causal_rollout_control",
+  "title": "Rollout control strategy",
+  "suite": "causal",
+  "category": "release_engineering",
+  "fixture_scope": "causal_rollout_control",
+  "request": "Compare the two equally relevant rollout approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-rollout-a or causal-rollout-b and whose final_choice is exactly shadow_adaptation or canary_rollback. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["causal-rollout-b", "causal-rollout-a"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to novel alternatives and cross-domain options before converging.",
+    "evidence": [
+      {
+        "id": "causal-rollout-a",
+        "direction": "exploration",
+        "choice_id": "shadow_adaptation",
+        "content": "Novel alternative evidence R-35: shadow traffic compares candidate behavior without serving its output, then adjusts routing from observed divergence. Exposure can expand incrementally after each observation window. Recommended choice id: shadow_adaptation."
+      },
+      {
+        "id": "causal-rollout-b",
+        "direction": "risk",
+        "choice_id": "canary_rollback",
+        "content": "Risk precedent R-10: a broad rollout previously amplified a rare failure before detection. A bounded canary with explicit rollback thresholds limits exposure and preserves reversibility. Recommended choice id: canary_rollback."
+      }
+    ]
+  }
+}

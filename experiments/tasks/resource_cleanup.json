@@ -1,0 +1,13 @@
+{
+  "id": "resource_cleanup",
+  "title": "Review resource cleanup on exceptions",
+  "suite": "capability",
+  "category": "code review",
+  "request": "`f = open(path); data = parse(f); f.close()` leaks the file if parse raises. Explain the defect, safe Python structure, and a failure-path test. Do not use tools.",
+  "required_findings": [
+    {"id": "exception_leak", "any_of": ["leak", "not closed", "泄漏", "未关闭"], "weight": 0.35},
+    {"id": "context_manager", "any_of": ["with open", "context manager", "上下文管理器"], "weight": 0.4},
+    {"id": "failure_path", "any_of": ["parse raises", "exception path", "异常路径", "解析失败"], "weight": 0.25}
+  ],
+  "forbidden_claims": []
+}

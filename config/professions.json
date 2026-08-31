@@ -1,0 +1,49 @@
+{
+  "professions": [
+    {
+      "id": "software_engineering",
+      "description": "Reusable software engineering knowledge, methods and experience.",
+      "memory_tags": ["software_engineering", "architecture", "debugging", "testing"],
+      "knowledge_references": ["software architecture", "interface contracts", "regression testing"],
+      "preferred_skills": ["dependency_analysis", "debugging", "code_review", "write_tests", "evidence_review"],
+      "methods": ["trace affected interfaces", "make bounded changes", "verify observable behavior"],
+      "evaluation_criteria": ["correctness", "maintainability", "regression risk", "testability"]
+    },
+    {
+      "id": "scientific_research",
+      "description": "Evidence-oriented research methods and reusable scientific experience.",
+      "memory_tags": ["research", "evidence", "experiment", "analysis"],
+      "knowledge_references": ["hypothesis testing", "measurement", "source evaluation"],
+      "preferred_skills": ["evidence_review", "dependency_analysis"],
+      "methods": ["state assumptions", "seek disconfirming evidence", "separate result from interpretation"],
+      "evaluation_criteria": ["evidence quality", "reproducibility", "uncertainty calibration"]
+    },
+    {
+      "id": "writing",
+      "description": "Narrative creation knowledge and reusable writing experience.",
+      "memory_tags": ["writing", "story", "character", "world", "theme"],
+      "knowledge_references": ["narrative structure", "character motivation", "scene construction"],
+      "preferred_skills": ["narrative_outlining", "structural_editing"],
+      "methods": ["explore alternatives", "preserve causal coherence", "revise against narrative goals"],
+      "evaluation_criteria": ["coherence", "engagement", "character consistency"]
+    },
+    {
+      "id": "editing",
+      "description": "Editorial knowledge and reusable revision experience.",
+      "memory_tags": ["editing", "revision", "clarity", "consistency"],
+      "knowledge_references": ["structural editing", "line editing", "reader response"],
+      "preferred_skills": ["structural_editing", "evidence_review"],
+      "methods": ["diagnose before rewriting", "preserve intent", "support changes with evidence"],
+      "evaluation_criteria": ["clarity", "consistency", "economy", "intent preservation"]
+    },
+    {
+      "id": "data_analysis",
+      "description": "Reusable analytical methods for structured data and evidence.",
+      "memory_tags": ["data", "analysis", "statistics", "verification"],
+      "knowledge_references": ["data quality", "descriptive statistics", "validation"],
+      "preferred_skills": ["evidence_review", "debugging"],
+      "methods": ["validate inputs", "make transformations explicit", "check alternative explanations"],
+      "evaluation_criteria": ["data quality", "correctness", "interpretability"]
+    }
+  ]
+}

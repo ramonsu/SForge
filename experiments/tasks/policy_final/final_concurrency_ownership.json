@@ -1,0 +1,30 @@
+{
+  "id": "final_concurrency_ownership",
+  "title": "Concurrency ownership boundary",
+  "suite": "policy_final",
+  "category": "concurrency",
+  "fixture_scope": "final_concurrency_ownership",
+  "request": "Compare the two technically viable concurrency designs in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-concurrency-a or final-concurrency-b and whose final_choice is exactly actor_ownership or lock_hierarchy. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-concurrency-b", "final-concurrency-a"],
+    "evidence": [
+      {
+        "id": "final-concurrency-a",
+        "direction": "exploration",
+        "choice_id": "actor_ownership",
+        "content": "Evidence C-32: actor ownership partitions mutable state so each key is updated serially while unrelated keys progress independently. It reduces shared-state reasoning and can be introduced by partition, although cross-partition operations require messaging. Choice id: actor_ownership."
+      },
+      {
+        "id": "final-concurrency-b",
+        "direction": "risk",
+        "choice_id": "lock_hierarchy",
+        "content": "Evidence C-11: an explicit lock hierarchy preserves the current shared-memory model while bounded acquisition and instrumentation expose contention. It supports incremental verification and rapid rollback, although developers must maintain ordering discipline across modules. Choice id: lock_hierarchy."
+      }
+    ]
+  }
+}

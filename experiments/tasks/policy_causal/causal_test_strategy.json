@@ -1,0 +1,31 @@
+{
+  "id": "causal_test_strategy",
+  "title": "Test strategy selection",
+  "suite": "causal",
+  "category": "test_design",
+  "fixture_scope": "causal_test_strategy",
+  "request": "Compare the two equally relevant testing approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-test-a or causal-test-b and whose final_choice is exactly regression_examples or generative_differential. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["causal-test-a", "causal-test-b"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to novel alternatives and cross-domain options before converging.",
+    "evidence": [
+      {
+        "id": "causal-test-a",
+        "direction": "risk",
+        "choice_id": "regression_examples",
+        "content": "Risk precedent T-13: a boundary defect previously escaped because its exact input sequence was absent. Curated regression examples preserve known failures and produce stable diagnostics. Recommended choice id: regression_examples."
+      },
+      {
+        "id": "causal-test-b",
+        "direction": "exploration",
+        "choice_id": "generative_differential",
+        "content": "Novel alternative evidence T-36: generative differential tests compare old and new implementations across varied inputs, revealing unanticipated boundaries while retaining failing seeds as examples. Recommended choice id: generative_differential."
+      }
+    ]
+  }
+}

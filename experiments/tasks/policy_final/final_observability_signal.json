@@ -1,0 +1,30 @@
+{
+  "id": "final_observability_signal",
+  "title": "Observability signal boundary",
+  "suite": "policy_final",
+  "category": "observability",
+  "fixture_scope": "final_observability_signal",
+  "request": "Compare the two technically viable observability approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-observe-a or final-observe-b and whose final_choice is exactly adaptive_anomaly or verified_thresholds. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-observe-a", "final-observe-b"],
+    "evidence": [
+      {
+        "id": "final-observe-a",
+        "direction": "exploration",
+        "choice_id": "adaptive_anomaly",
+        "content": "Evidence O-40: adaptive anomaly detection learns seasonal baselines across related signals and can surface previously unspecified failure shapes. It broadens discovery beyond fixed limits, although operators need explanations and drift controls. Choice id: adaptive_anomaly."
+      },
+      {
+        "id": "final-observe-b",
+        "direction": "risk",
+        "choice_id": "verified_thresholds",
+        "content": "Evidence O-16: verified thresholds encode the known service limits with rehearsed alerts and explicit escalation actions. They produce predictable diagnostics and can be audited directly, although novel multi-signal failures may remain below each threshold. Choice id: verified_thresholds."
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "api_keyword_compatibility",
+  "title": "Review a keyword-parameter rename",
+  "suite": "capability",
+  "category": "API compatibility",
+  "request": "A public Python API changes `send(payload, timeout=5)` to `send(data, deadline=5)`. Existing callers frequently use both old names as keyword arguments. Review backward compatibility and propose a migration design plus tests. Do not use tools.",
+  "required_findings": [
+    {"id": "keyword_break", "any_of": ["unexpected keyword", "keyword argument", "关键字参数", "timeout=", "payload="], "weight": 0.4},
+    {"id": "compatibility_shim", "any_of": ["deprecation", "alias", "shim", "兼容层", "弃用"], "weight": 0.35},
+    {"id": "conflict_test", "any_of": ["both", "conflict", "同时传", "冲突"], "weight": 0.25}
+  ],
+  "forbidden_claims": [{"id": "rename_safe", "any_of": ["purely internal rename", "不会影响调用方"], "penalty": 0.6}]
+}

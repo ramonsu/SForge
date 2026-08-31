@@ -1,0 +1,13 @@
+{
+  "id": "transaction_partial_write",
+  "title": "Detect partial-write risk",
+  "suite": "capability",
+  "category": "code review",
+  "request": "`create_order()` inserts an order, commits, then inserts line items and commits again. The API promises all-or-nothing creation. Review the failure mode and propose a bounded fix and test. Do not use tools.",
+  "required_findings": [
+    {"id": "partial_state", "any_of": ["partial", "orphan", "半成品", "部分写入", "孤立订单"], "weight": 0.4},
+    {"id": "single_transaction", "any_of": ["single transaction", "one transaction", "同一事务", "一个事务"], "weight": 0.35},
+    {"id": "rollback_test", "any_of": ["rollback", "回滚", "line item failure", "明细失败"], "weight": 0.25}
+  ],
+  "forbidden_claims": [{"id": "first_commit_safe", "any_of": ["first commit is safe", "第一次提交是安全的"], "penalty": 0.6}]
+}

@@ -1,0 +1,31 @@
+{
+  "id": "mechanism_policy_cache",
+  "title": "Trace risk versus novel cache evidence selection",
+  "suite": "mechanism",
+  "category": "policy-sensitive",
+  "fixture_scope": "policy_cache",
+  "request": "Review the planned cache change. The two visible policy-fixture memories are equally legal and task-relevant. Use the higher-ranked one as the controlling evidence. Return a FinalAnswer Decision with primary_evidence_id set to exactly one of mechanism-policy-risk-r17 or mechanism-policy-novel-n42, secondary_evidence_ids containing only optional auxiliary evidence, and final_choice set to exactly guarded_invalidation or versioned_keys. Do not use tools.",
+  "required_findings": [{"id": "evidence_id", "any_of": ["r-17", "n-42"], "weight": 1.0}],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_transmission",
+    "candidate_memory_ids": [
+      "mechanism-policy-risk-r17",
+      "mechanism-policy-novel-n42"
+    ],
+    "policy_preferences": {
+      "INTJ": {
+        "primary_evidence_id": "mechanism-policy-risk-r17",
+        "final_choice": "guarded_invalidation"
+      },
+      "ENFP": {
+        "primary_evidence_id": "mechanism-policy-novel-n42",
+        "final_choice": "versioned_keys"
+      }
+    },
+    "branches": {
+      "risk": {"memory_ids": ["mechanism-policy-risk-r17"], "evidence_patterns": ["r-17", "read-after-write", "version check"]},
+      "novel": {"memory_ids": ["mechanism-policy-novel-n42"], "evidence_patterns": ["n-42", "versioned cache keys", "版本化缓存"]}
+    }
+  }
+}

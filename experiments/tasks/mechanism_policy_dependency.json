@@ -1,0 +1,31 @@
+{
+  "id": "mechanism_policy_dependency",
+  "title": "Trace precedent versus exploratory dependency evidence",
+  "suite": "mechanism",
+  "category": "policy-sensitive",
+  "fixture_scope": "policy_dependency",
+  "request": "Plan the dependency migration. The two visible policy-fixture memories are equally legal and task-relevant. Use the higher-ranked one as the controlling evidence. Return a FinalAnswer Decision with primary_evidence_id set to exactly one of mechanism-policy-precedent-p08 or mechanism-policy-exploratory-x31, secondary_evidence_ids containing only optional auxiliary evidence, and final_choice set to exactly compatibility_adapter or event_projection. Do not use tools.",
+  "required_findings": [{"id": "evidence_id", "any_of": ["p-08", "x-31"], "weight": 1.0}],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_transmission",
+    "candidate_memory_ids": [
+      "mechanism-policy-precedent-p08",
+      "mechanism-policy-exploratory-x31"
+    ],
+    "policy_preferences": {
+      "INTJ": {
+        "primary_evidence_id": "mechanism-policy-precedent-p08",
+        "final_choice": "compatibility_adapter"
+      },
+      "ENFP": {
+        "primary_evidence_id": "mechanism-policy-exploratory-x31",
+        "final_choice": "event_projection"
+      }
+    },
+    "branches": {
+      "risk": {"memory_ids": ["mechanism-policy-precedent-p08"], "evidence_patterns": ["p-08", "adapter", "contract tests"]},
+      "novel": {"memory_ids": ["mechanism-policy-exploratory-x31"], "evidence_patterns": ["x-31", "event stream", "事件流"]}
+    }
+  }
+}

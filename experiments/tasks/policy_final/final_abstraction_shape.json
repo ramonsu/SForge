@@ -1,0 +1,30 @@
+{
+  "id": "final_abstraction_shape",
+  "title": "Abstraction shape boundary",
+  "suite": "policy_final",
+  "category": "abstraction_choice",
+  "fixture_scope": "final_abstraction_shape",
+  "request": "Compare the two technically viable abstraction designs in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-abstraction-a or final-abstraction-b and whose final_choice is exactly composable_protocol or explicit_interfaces. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-abstraction-a", "final-abstraction-b"],
+    "evidence": [
+      {
+        "id": "final-abstraction-a",
+        "direction": "exploration",
+        "choice_id": "composable_protocol",
+        "content": "Evidence D-35: a small composable protocol represents behaviors as interchangeable transformations and supports combinations not anticipated by the original API. It keeps extension points open, although invalid compositions need stronger runtime validation. Choice id: composable_protocol."
+      },
+      {
+        "id": "final-abstraction-b",
+        "direction": "risk",
+        "choice_id": "explicit_interfaces",
+        "content": "Evidence D-15: separate explicit interfaces encode the currently supported behaviors with direct type checks and focused tests. They make compatibility obligations visible, although adding a new combination may require coordinated interface changes. Choice id: explicit_interfaces."
+      }
+    ]
+  }
+}

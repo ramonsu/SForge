@@ -1,0 +1,30 @@
+{
+  "id": "final_storage_extension",
+  "title": "Storage extension boundary",
+  "suite": "policy_final",
+  "category": "storage_choice",
+  "fixture_scope": "final_storage_extension",
+  "request": "Compare the two technically viable storage extension approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-storage-a or final-storage-b and whose final_choice is exactly relational_extension or document_sidecar. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-storage-a", "final-storage-b"],
+    "evidence": [
+      {
+        "id": "final-storage-a",
+        "direction": "risk",
+        "choice_id": "relational_extension",
+        "content": "Evidence S-21: a relational extension adds nullable typed columns and verified migrations within the established transaction boundary. It preserves current backup and query procedures, although frequent shape changes require repeated schema coordination. Choice id: relational_extension."
+      },
+      {
+        "id": "final-storage-b",
+        "direction": "exploration",
+        "choice_id": "document_sidecar",
+        "content": "Evidence S-47: a document sidecar stores evolving optional attributes beside the relational core and lets features add fields independently. It accelerates schema variation, although consistency checks now span two representations. Choice id: document_sidecar."
+      }
+    ]
+  }
+}

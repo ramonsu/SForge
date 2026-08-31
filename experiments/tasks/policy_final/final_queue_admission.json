@@ -1,0 +1,30 @@
+{
+  "id": "final_queue_admission",
+  "title": "Queue admission boundary",
+  "suite": "policy_final",
+  "category": "queue_pressure",
+  "fixture_scope": "final_queue_admission",
+  "request": "Compare the two technically viable queue admission approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-queue-a or final-queue-b and whose final_choice is exactly fixed_backpressure or adaptive_admission. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-queue-b", "final-queue-a"],
+    "evidence": [
+      {
+        "id": "final-queue-a",
+        "direction": "risk",
+        "choice_id": "fixed_backpressure",
+        "content": "Evidence Q-15: fixed backpressure rejects new work at a tested queue depth and preserves bounded processing latency under the known capacity model. It is straightforward to rehearse, although unused capacity cannot be borrowed dynamically. Choice id: fixed_backpressure."
+      },
+      {
+        "id": "final-queue-b",
+        "direction": "exploration",
+        "choice_id": "adaptive_admission",
+        "content": "Evidence Q-42: adaptive admission adjusts intake from observed service time and downstream saturation, allowing short bursts when capacity is available. It uses resources more flexibly, although feedback stability needs careful tuning. Choice id: adaptive_admission."
+      }
+    ]
+  }
+}

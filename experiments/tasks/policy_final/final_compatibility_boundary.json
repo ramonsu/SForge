@@ -1,0 +1,30 @@
+{
+  "id": "final_compatibility_boundary",
+  "title": "Compatibility boundary placement",
+  "suite": "policy_final",
+  "category": "compatibility",
+  "fixture_scope": "final_compatibility_boundary",
+  "request": "Compare the two technically viable compatibility approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-compat-a or final-compat-b and whose final_choice is exactly server_adapter or consumer_facade. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-compat-a", "final-compat-b"],
+    "evidence": [
+      {
+        "id": "final-compat-a",
+        "direction": "risk",
+        "choice_id": "server_adapter",
+        "content": "Evidence B-17: a server adapter translates the new representation back to the established contract at one audited boundary. It protects unchanged consumers and centralizes rollback, although the service carries compatibility logic until migration completes. Choice id: server_adapter."
+      },
+      {
+        "id": "final-compat-b",
+        "direction": "exploration",
+        "choice_id": "consumer_facade",
+        "content": "Evidence B-43: a shared consumer facade normalizes old and new representations while allowing each client to migrate on its own schedule. It distributes adoption flexibility, although facade releases must remain coordinated across several repositories. Choice id: consumer_facade."
+      }
+    ]
+  }
+}

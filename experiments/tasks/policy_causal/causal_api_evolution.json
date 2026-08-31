@@ -1,0 +1,31 @@
+{
+  "id": "causal_api_evolution",
+  "title": "API evolution strategy",
+  "suite": "causal",
+  "category": "api_compatibility",
+  "fixture_scope": "causal_api_evolution",
+  "request": "Compare the two equally relevant API-evolution approaches in visible evidence. Neither is declared more correct. Return a FinalAnswer Decision whose primary_evidence_id is exactly causal-api-a or causal-api-b and whose final_choice is exactly capability_negotiation or compatibility_shim. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_causal_decomposition",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["causal-api-a", "causal-api-b"],
+    "reasoning_guidance": "When multiple equally relevant approaches exist, give greater initial consideration to established failure evidence and reversible safeguards before converging.",
+    "evidence": [
+      {
+        "id": "causal-api-a",
+        "direction": "exploration",
+        "choice_id": "capability_negotiation",
+        "content": "Novel alternative evidence A-37: clients advertise supported capabilities and the server selects a compatible response shape. New fields can be adopted independently without a global version switch. Recommended choice id: capability_negotiation."
+      },
+      {
+        "id": "causal-api-b",
+        "direction": "risk",
+        "choice_id": "compatibility_shim",
+        "content": "Risk precedent A-12: removing a legacy response field previously broke clients with strict decoders. A compatibility shim preserves the old shape and supports a reversible deprecation window. Recommended choice id: compatibility_shim."
+      }
+    ]
+  }
+}

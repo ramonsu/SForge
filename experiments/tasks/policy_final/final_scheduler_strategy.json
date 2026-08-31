@@ -1,0 +1,30 @@
+{
+  "id": "final_scheduler_strategy",
+  "title": "Scheduler strategy boundary",
+  "suite": "policy_final",
+  "category": "scheduling",
+  "fixture_scope": "final_scheduler_strategy",
+  "request": "Compare the two technically viable scheduler approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-scheduler-a or final-scheduler-b and whose final_choice is exactly work_stealing or fixed_priority. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-scheduler-a", "final-scheduler-b"],
+    "evidence": [
+      {
+        "id": "final-scheduler-a",
+        "direction": "exploration",
+        "choice_id": "work_stealing",
+        "content": "Evidence H-37: work stealing lets idle workers acquire tasks from busy peers and adapts automatically to uneven workloads. It improves utilization across changing queues, although execution order becomes less predictable for diagnosis. Choice id: work_stealing."
+      },
+      {
+        "id": "final-scheduler-b",
+        "direction": "risk",
+        "choice_id": "fixed_priority",
+        "content": "Evidence H-14: fixed priority queues preserve deterministic ordering and tested starvation limits for known workload classes. They make latency behavior easier to verify, although static weights respond slowly when the workload mix shifts. Choice id: fixed_priority."
+      }
+    ]
+  }
+}

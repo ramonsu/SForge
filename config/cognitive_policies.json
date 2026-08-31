@@ -1,0 +1,56 @@
+{
+  "base": {
+    "memory": {
+      "retrieval_breadth": 0.50,
+      "contradiction_weight": 0.50,
+      "novelty_weight": 0.50,
+      "precedent_weight": 0.50,
+      "cross_domain_weight": 0.50
+    },
+    "cognition": {
+      "abstraction_weight": 0.50,
+      "concrete_evidence_weight": 0.50,
+      "planning_weight": 0.50,
+      "exploration_weight": 0.50,
+      "verification_weight": 0.50
+    },
+    "interaction": {
+      "external_information_bias": 0.50,
+      "collaboration_bias": 0.50,
+      "internal_reflection_bias": 0.50
+    }
+  },
+  "axis_deltas": {
+    "I": {
+      "memory": {"precedent_weight": 0.10},
+      "interaction": {"external_information_bias": -0.20, "internal_reflection_bias": 0.25}
+    },
+    "E": {
+      "memory": {"novelty_weight": 0.10},
+      "interaction": {"external_information_bias": 0.25, "collaboration_bias": 0.20, "internal_reflection_bias": -0.20}
+    },
+    "S": {
+      "memory": {"precedent_weight": 0.10},
+      "cognition": {"abstraction_weight": -0.15, "concrete_evidence_weight": 0.20}
+    },
+    "N": {
+      "memory": {"novelty_weight": 0.15, "cross_domain_weight": 0.15},
+      "cognition": {"abstraction_weight": 0.20, "concrete_evidence_weight": -0.15}
+    },
+    "T": {
+      "memory": {"contradiction_weight": 0.15},
+      "cognition": {"verification_weight": 0.15}
+    },
+    "F": {
+      "cognition": {"exploration_weight": 0.05},
+      "interaction": {"collaboration_bias": 0.15}
+    },
+    "J": {
+      "cognition": {"planning_weight": 0.20, "exploration_weight": -0.15, "verification_weight": 0.10}
+    },
+    "P": {
+      "memory": {"novelty_weight": 0.10},
+      "cognition": {"planning_weight": -0.15, "exploration_weight": 0.20}
+    }
+  }
+}

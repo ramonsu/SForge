@@ -1,7 +1,86 @@
-# Novel Writing
+# Novel Writing Workflow
 
-这是小说写作的最小示例 Workflow。它为同一种 AgentProcess 挂载小说写作说明、可用
-Capability 与 Workflow Memory；构思、世界观、大纲、初稿、审查和修订都由 Agent 自行
-思考并通过结构化 ActionRequest 推进。
 
-Harness 不理解小说语义，不创建角色 Agent，也不调度预定义 DAG。
+## Purpose
+
+Support long-form fiction creation.
+
+This workflow does not create multiple agents.
+
+A single AgentProcess requests cognitive-environment changes through workflow states.
+
+
+## State Space
+
+
+### Creation State
+
+Focus:
+
+- imagination
+- world building
+- character creation
+- narrative planning
+
+
+Memory:
+
+- creative ideas
+- previous concepts
+- unfinished drafts
+
+
+
+### Revision State
+
+Focus:
+
+- identify weaknesses
+- improve structure
+- maintain consistency
+
+
+Memory:
+
+- draft versions
+- previous revisions
+- constraints
+
+
+
+### Review State
+
+Focus:
+
+- external perspective
+- emotional response
+- accessibility
+
+
+Memory:
+
+- feedback
+- preferences
+- audience expectation
+
+
+
+## Principles
+
+Agent is responsible for reasoning.
+
+Workflow declares a directed cyclic graph. In particular, review can return to revision;
+this is intentional and must not be flattened into a DAG or automatic pipeline.
+
+Harness only validates and mounts:
+
+- state transition
+- capability access
+- memory scope
+- execution permission
+
+
+The workflow does not contain fixed Agent roles or an automatic writing pipeline.
+
+The Agent decides when to request admission and when a declared transition condition is
+appropriate. Harness verifies the requested node and edge, but never evaluates the story.

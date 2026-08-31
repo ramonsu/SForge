@@ -1,15 +1,135 @@
 {
   "id": "novel_writing",
-  "initial_state": "writing",
+  "description": "Long-form fiction creation workflow",
+
+  "initial_state": "creation",
+
   "states": {
-    "writing": {
-      "allowed_capabilities": [
-        "echo",
-        "read_text",
-        "write_text"
+
+    "creation": {
+      "context": "Explore possibilities, worldbuilding, characters and narrative structure.",
+
+      "goal": "Create novel concepts, worldbuilding and narrative structure",
+
+      "memory_scope": [
+        "workflow",
+        "creative_memory"
       ],
-      "memory_scope": "workflow",
-      "context_sources": []
+
+      "memory_write_scope": "creative_memory",
+
+      "memory_hints": [
+        "idea",
+        "world",
+        "character",
+        "theme"
+      ],
+
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "filesystem.list"
+      ],
+
+      "evaluation": {
+        "criteria": [
+          "originality",
+          "coherence",
+          "theme_consistency"
+        ]
+      }
+    },
+
+
+    "revision": {
+      "context": "Inspect and improve structure, pacing, prose and internal consistency.",
+
+      "goal": "Improve structure, pacing and logical consistency",
+
+      "memory_scope": [
+        "workflow",
+        "draft_memory"
+      ],
+
+      "memory_write_scope": "draft_memory",
+
+      "memory_hints": [
+        "draft",
+        "revision",
+        "constraint",
+        "consistency"
+      ],
+
+      "allowed_capabilities": [
+        "filesystem.read",
+        "filesystem.write"
+      ],
+
+      "evaluation": {
+        "criteria": [
+          "plot_quality",
+          "character_consistency",
+          "language_quality"
+        ]
+      }
+    },
+
+
+    "review": {
+      "context": "Evaluate the work from an external reading perspective.",
+
+      "goal": "Evaluate emotional impact and reading experience",
+
+      "memory_scope": [
+        "workflow",
+        "reader_feedback"
+      ],
+
+      "memory_write_scope": "reader_feedback",
+
+      "memory_hints": [
+        "feedback",
+        "preference",
+        "audience",
+        "response"
+      ],
+
+      "allowed_capabilities": [
+        "filesystem.read"
+      ],
+
+      "evaluation": {
+        "criteria": [
+          "engagement",
+          "clarity",
+          "emotional_resonance"
+        ]
+      }
     }
+  },
+
+
+  "transitions": {
+
+    "creation": [
+      {
+        "condition": "draft_completed",
+        "target": "revision"
+      }
+    ],
+
+    "revision": [
+      {
+        "condition": "revision_completed",
+        "target": "review"
+      }
+    ],
+
+    "review": [
+      {
+        "condition": "feedback_generated",
+        "target": "revision"
+      }
+    ]
   }
 }

@@ -1,0 +1,30 @@
+{
+  "id": "final_api_contract",
+  "title": "API contract evolution boundary",
+  "suite": "policy_final",
+  "category": "api_evolution",
+  "fixture_scope": "final_api_contract",
+  "request": "Compare the two technically viable API evolution approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-api-a or final-api-b and whose final_choice is exactly compatibility_envelope or capability_negotiation. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-api-a", "final-api-b"],
+    "evidence": [
+      {
+        "id": "final-api-a",
+        "direction": "risk",
+        "choice_id": "compatibility_envelope",
+        "content": "Evidence A-14: a compatibility envelope keeps the legacy response shape while optional fields are introduced behind an explicit version window. It gives strict clients a tested rollback path, although the server must temporarily maintain two representations. Choice id: compatibility_envelope."
+      },
+      {
+        "id": "final-api-b",
+        "direction": "exploration",
+        "choice_id": "capability_negotiation",
+        "content": "Evidence A-41: capability negotiation lets each client advertise supported features and receive the richest compatible response. It supports independent adoption without a global version switch, although negotiation logic adds a new coordination surface. Choice id: capability_negotiation."
+      }
+    ]
+  }
+}

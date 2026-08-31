@@ -1,0 +1,13 @@
+{
+  "id": "queue_tradeoff",
+  "title": "Choose bounded asynchronous processing architecture",
+  "suite": "capability",
+  "category": "architectural tradeoff",
+  "request": "Choose between synchronous request processing and a durable queue for image jobs taking 20-90 seconds. The API must respond within 2 seconds and jobs must survive process restarts. Explain the choice and one residual operational risk. Do not use tools.",
+  "required_findings": [
+    {"id": "durable_queue", "any_of": ["durable queue", "persistent queue", "持久队列", "异步队列"], "weight": 0.45},
+    {"id": "job_id", "any_of": ["job id", "202", "status endpoint", "任务 id", "状态查询"], "weight": 0.25},
+    {"id": "delivery_risk", "any_of": ["duplicate", "idempot", "dead letter", "重复", "幂等", "死信"], "weight": 0.3}
+  ],
+  "forbidden_claims": [{"id": "exactly_once", "any_of": ["guaranteed exactly once", "保证严格一次"], "penalty": 0.5}]
+}

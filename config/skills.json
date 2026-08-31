@@ -1,0 +1,39 @@
+{
+  "skills": [
+    {
+      "id": "evidence_review",
+      "description": "Compare claims with observable evidence and identify unsupported conclusions.",
+      "instructions": ["Separate observations, inferences and unresolved uncertainty."]
+    },
+    {
+      "id": "dependency_analysis",
+      "description": "Trace dependencies and downstream callers before changing shared interfaces.",
+      "instructions": ["Map producers, consumers and compatibility constraints before proposing changes."]
+    },
+    {
+      "id": "debugging",
+      "description": "Localize failures through reproducible observations and controlled hypotheses.",
+      "instructions": ["Reproduce, narrow the cause, test one hypothesis, then verify the fix."]
+    },
+    {
+      "id": "code_review",
+      "description": "Review software changes for correctness, maintainability and regression risk.",
+      "instructions": ["Prioritize boundary violations and observable failures over stylistic preference."]
+    },
+    {
+      "id": "write_tests",
+      "description": "Design focused tests around contracts, boundaries and regressions.",
+      "instructions": ["Test externally observable behavior and important negative cases."]
+    },
+    {
+      "id": "narrative_outlining",
+      "description": "Organize narrative goals, conflicts and causal progression.",
+      "instructions": ["Connect scene purpose to character motivation and later consequences."]
+    },
+    {
+      "id": "structural_editing",
+      "description": "Improve structure and clarity while preserving authorial intent.",
+      "instructions": ["Identify the smallest revision that resolves the structural problem."]
+    }
+  ]
+}

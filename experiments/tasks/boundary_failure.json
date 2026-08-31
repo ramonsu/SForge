@@ -1,0 +1,29 @@
+{
+  "id": "boundary_failure",
+  "title": "Diagnose a boundary-condition test failure",
+  "request": "A test expects `chunk([1,2,3,4], 2)` to return `[[1,2],[3,4]]`, but it returns `[[1,2],[3,4],[]]`. Review the loop below, identify the exact boundary error, and propose a focused regression test. Do not execute tools or request a different workflow/resource.\n\n```python\ndef chunk(items, size):\n    result = []\n    start = 0\n    while start <= len(items):\n        result.append(items[start:start + size])\n        start += size\n    return result\n```",
+  "required_findings": [
+    {
+      "id": "comparison_bug",
+      "any_of": ["<=", "start < len", "less than", "边界", "小于而不是小于等于"],
+      "weight": 0.45
+    },
+    {
+      "id": "extra_iteration",
+      "any_of": ["extra iteration", "empty slice", "empty list", "额外迭代", "空切片", "空列表"],
+      "weight": 0.3
+    },
+    {
+      "id": "exact_division_test",
+      "any_of": ["exact multiple", "evenly divisible", "length 4", "整除", "长度为 4"],
+      "weight": 0.25
+    }
+  ],
+  "forbidden_claims": [
+    {
+      "id": "slice_overflow",
+      "any_of": ["slice raises indexerror", "切片会抛出 indexerror"],
+      "penalty": 0.5
+    }
+  ]
+}

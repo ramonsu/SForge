@@ -1,0 +1,30 @@
+{
+  "id": "final_cache_refresh",
+  "title": "Cache refresh boundary",
+  "suite": "policy_final",
+  "category": "caching",
+  "fixture_scope": "final_cache_refresh",
+  "request": "Compare the two technically viable cache refresh approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-cache-a or final-cache-b and whose final_choice is exactly stale_revalidation or generation_tokens. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-cache-a", "final-cache-b"],
+    "evidence": [
+      {
+        "id": "final-cache-a",
+        "direction": "exploration",
+        "choice_id": "stale_revalidation",
+        "content": "Evidence K-38: stale-while-revalidate serves a bounded older value while one request refreshes the entry asynchronously. It smooths latency during bursts and tolerates refresh failures, although consumers must accept an explicit staleness window. Choice id: stale_revalidation."
+      },
+      {
+        "id": "final-cache-b",
+        "direction": "risk",
+        "choice_id": "generation_tokens",
+        "content": "Evidence K-16: generation tokens reject late refresh writes when the source version has advanced. They preserve familiar invalidation behavior and directly verify ordering, although every producer must propagate the current generation correctly. Choice id: generation_tokens."
+      }
+    ]
+  }
+}

@@ -24,10 +24,10 @@ def builtins(workspace_root: str | Path) -> tuple[FunctionCapability, ...]:
             raise ValueError("路径必须位于 SForge workspace 内") from exc
         return resolved
 
-    def read_text(arguments: dict) -> str:
+    def read_file(arguments: dict) -> str:
         return safe_path(arguments["path"]).read_text(encoding="utf-8")
 
-    def write_text(arguments: dict) -> dict[str, object]:
+    def write_file(arguments: dict) -> dict[str, object]:
         path = safe_path(arguments["path"])
         path.parent.mkdir(parents=True, exist_ok=True)
         content = arguments["content"]
@@ -36,6 +36,18 @@ def builtins(workspace_root: str | Path) -> tuple[FunctionCapability, ...]:
             "path": path.relative_to(root).as_posix(),
             "characters": len(content),
         }
+
+    def list_directory(arguments: dict) -> list[dict[str, str]]:
+        directory = safe_path(arguments["path"])
+        return [
+            {
+                "path": entry.relative_to(root).as_posix(),
+                "kind": "directory" if entry.is_dir() else "file",
+            }
+            for entry in sorted(
+                directory.iterdir(), key=lambda item: item.name.casefold()
+            )
+        ]
 
     return (
         FunctionCapability(
@@ -53,7 +65,7 @@ def builtins(workspace_root: str | Path) -> tuple[FunctionCapability, ...]:
         ),
         FunctionCapability(
             CapabilityDescriptor(
-                id="read_text",
+                id="filesystem.read",
                 description="Read one UTF-8 text file inside the workspace",
                 input_schema={
                     "type": "object",
@@ -62,11 +74,11 @@ def builtins(workspace_root: str | Path) -> tuple[FunctionCapability, ...]:
                 },
                 output_schema={"type": "string"},
             ),
-            read_text,
+            read_file,
         ),
         FunctionCapability(
             CapabilityDescriptor(
-                id="write_text",
+                id="filesystem.write",
                 description="Write one UTF-8 text file inside the workspace",
                 input_schema={
                     "type": "object",
@@ -86,6 +98,31 @@ def builtins(workspace_root: str | Path) -> tuple[FunctionCapability, ...]:
                 },
                 side_effects=True,
             ),
-            write_text,
+            write_file,
+        ),
+        FunctionCapability(
+            CapabilityDescriptor(
+                id="filesystem.list",
+                description=(
+                    "List sorted workspace-relative entries in one directory"
+                ),
+                input_schema={
+                    "type": "object",
+                    "required": ["path"],
+                    "properties": {"path": {"type": "string"}},
+                },
+                output_schema={
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "required": ["path", "kind"],
+                        "properties": {
+                            "path": {"type": "string"},
+                            "kind": {"type": "string"},
+                        },
+                    },
+                },
+            ),
+            list_directory,
         ),
     )

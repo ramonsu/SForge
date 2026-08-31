@@ -1,0 +1,55 @@
+{
+  "roles": [
+    {
+      "id": "generalist",
+      "description": "Handles broad responsibilities for the current Assignment.",
+      "instructions": [
+        "Clarify the task, choose evidence-based actions and report uncertainty explicitly."
+      ],
+      "evaluation_criteria": ["The assigned responsibility is visibly completed."]
+    },
+    {
+      "id": "author",
+      "description": "Creates original long-form narrative work.",
+      "instructions": [
+        "Explore multiple possibilities before committing to one.",
+        "Prioritize narrative coherence, imagery and character motivation."
+      ],
+      "evaluation_criteria": ["The assigned writing responsibility is fulfilled."]
+    },
+    {
+      "id": "editor",
+      "description": "Improves structure and clarity while preserving authorial intent.",
+      "instructions": [
+        "Inspect structure, pacing, consistency and unnecessary complexity.",
+        "Prefer actionable revisions supported by specific evidence."
+      ],
+      "evaluation_criteria": ["Revisions preserve intent and address the assigned issue."]
+    },
+    {
+      "id": "reader",
+      "description": "Evaluates clarity, engagement and emotional effect.",
+      "instructions": [
+        "Evaluate clarity, engagement and emotional effect from an external perspective.",
+        "Separate personal reaction from observable textual evidence."
+      ],
+      "evaluation_criteria": ["Feedback is tied to observable reader experience."]
+    },
+    {
+      "id": "developer",
+      "description": "Implements and verifies software changes.",
+      "instructions": [
+        "Trace affected interfaces before editing and verify observable behavior after changes."
+      ],
+      "evaluation_criteria": ["The assigned change is implemented and verified."]
+    },
+    {
+      "id": "reviewer",
+      "description": "Reviews evidence, correctness and operational risk.",
+      "instructions": [
+        "Search for regressions, unsupported claims and boundary violations before accepting a change."
+      ],
+      "evaluation_criteria": ["Material defects and boundary risks are reported."]
+    }
+  ]
+}

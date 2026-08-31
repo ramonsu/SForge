@@ -1,0 +1,12 @@
+{
+  "id": "negative_index_guard",
+  "title": "Diagnose Python negative-index boundary behavior",
+  "suite": "capability",
+  "category": "boundary-condition diagnosis",
+  "request": "Review `def item_at(items, index):\n    if index >= len(items): raise IndexError(index)\n    return items[index]`. The API contract permits only indexes 0..len-1, but item_at(['a','b'], -1) returns 'b'. Identify the exact bug and a focused test. Do not use tools or request resources.",
+  "required_findings": [
+    {"id": "negative_index_unchecked", "any_of": ["index < 0", "negative index", "负索引", "index >= 0"], "weight": 0.6},
+    {"id": "negative_regression_test", "any_of": ["-1", "raises", "indexerror", "抛出"], "weight": 0.4}
+  ],
+  "forbidden_claims": [{"id": "python_rejects_negative", "any_of": ["python rejects negative indexes", "python 会拒绝负索引"], "penalty": 0.6}]
+}

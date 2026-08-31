@@ -1,0 +1,30 @@
+{
+  "id": "final_error_contract",
+  "title": "Error contract boundary",
+  "suite": "policy_final",
+  "category": "error_handling",
+  "fixture_scope": "final_error_contract",
+  "request": "Compare the two technically viable error contract approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-error-a or final-error-b and whose final_choice is exactly resumable_problems or typed_statuses. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-error-b", "final-error-a"],
+    "evidence": [
+      {
+        "id": "final-error-a",
+        "direction": "exploration",
+        "choice_id": "resumable_problems",
+        "content": "Evidence E-38: resumable problem documents carry machine-readable recovery options and let clients continue from context-specific checkpoints. They support richer future remediation, although clients must validate a more flexible response structure. Choice id: resumable_problems."
+      },
+      {
+        "id": "final-error-b",
+        "direction": "risk",
+        "choice_id": "typed_statuses",
+        "content": "Evidence E-12: typed status responses enumerate known failures with stable fields and tested client branches. They keep compatibility and monitoring straightforward, although adding a new recovery path requires another coordinated contract revision. Choice id: typed_statuses."
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "exception_swallowing",
+  "title": "Review broad exception fallback",
+  "suite": "capability",
+  "category": "regression analysis",
+  "request": "A refactor wraps a payment lookup in `except Exception: return None` to improve availability. Previously network errors propagated and callers retried, while None meant 'payment absent'. Identify regressions and focused tests. Do not use tools.",
+  "required_findings": [
+    {"id": "semantic_conflation", "any_of": ["conflat", "indistinguishable", "混淆", "无法区分", "none meant"], "weight": 0.45},
+    {"id": "retry_lost", "any_of": ["retry", "重试"], "weight": 0.3},
+    {"id": "narrow_exception", "any_of": ["specific exception", "narrow", "特定异常", "缩小捕获"], "weight": 0.25}
+  ],
+  "forbidden_claims": [{"id": "availability_only", "any_of": ["no behavior change", "没有行为变化"], "penalty": 0.7}]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "final_dependency_surface",
+  "title": "Dependency surface boundary",
+  "suite": "policy_final",
+  "category": "dependency_handling",
+  "fixture_scope": "final_dependency_surface",
+  "request": "Compare the two technically viable dependency approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-dependency-a or final-dependency-b and whose final_choice is exactly staged_pin or capability_facade. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "INTJ",
+    "target_direction": "risk",
+    "neutral_order": ["final-dependency-a", "final-dependency-b"],
+    "evidence": [
+      {
+        "id": "final-dependency-a",
+        "direction": "risk",
+        "choice_id": "staged_pin",
+        "content": "Evidence P-19: a staged version pin upgrades one dependency boundary at a time and runs the established compatibility suite before expansion. It limits rollback scope and exposes regressions early, although migration proceeds more slowly. Choice id: staged_pin."
+      },
+      {
+        "id": "final-dependency-b",
+        "direction": "exploration",
+        "choice_id": "capability_facade",
+        "content": "Evidence P-46: a capability facade selects available dependency features at runtime and lets old and new versions coexist behind one interface. It enables gradual adoption across services, although the facade must represent divergent behaviors. Choice id: capability_facade."
+      }
+    ]
+  }
+}

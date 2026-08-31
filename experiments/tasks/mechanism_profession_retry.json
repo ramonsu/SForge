@@ -1,0 +1,19 @@
+{
+  "id": "mechanism_profession_retry",
+  "title": "Use project-specific transaction retry method",
+  "suite": "mechanism",
+  "category": "profession-sensitive",
+  "fixture_scope": "profession_retry",
+  "request": "A retry loop catches a retryable database error and immediately runs the statement again on the same connection. Diagnose using and citing any professional evidence identifier visible in context; do not invent one. State the required operation before retry. Do not use tools.",
+  "required_findings": [
+    {"id": "se23_evidence", "any_of": ["se-23"], "weight": 0.35},
+    {"id": "rollback_before_retry", "any_of": ["rollback before", "rollback first", "先回滚", "回滚后重试"], "weight": 0.4},
+    {"id": "aborted_state", "any_of": ["aborted transaction", "failed transaction", "事务失败状态", "中止状态"], "weight": 0.25}
+  ],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "profession_sensitive",
+    "memory_ids": ["mechanism-profession-rollback-before-retry"],
+    "evidence_patterns": ["se-23", "rollback before", "先回滚"]
+  }
+}

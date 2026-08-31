@@ -5,3 +5,10 @@ __pycache__/
 .pytest_cache/
 memory/chroma_db/
 memory/runtime.sqlite3*
+experiments/results/
+# Project plans
+SForge_*_PLAN.md
+from_hook.md
+v1_4_PLAN.md
+v1_5_PLAN.md
+v1_6_PLAN.md

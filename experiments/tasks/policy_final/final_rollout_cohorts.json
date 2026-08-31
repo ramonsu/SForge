@@ -1,0 +1,30 @@
+{
+  "id": "final_rollout_cohorts",
+  "title": "Rollout cohort boundary",
+  "suite": "policy_final",
+  "category": "rollout",
+  "fixture_scope": "final_rollout_cohorts",
+  "request": "Compare the two technically viable rollout approaches in visible evidence. Neither is declared correct or preferred. Return a FinalAnswer Decision whose primary_evidence_id is exactly final-rollout-a or final-rollout-b and whose final_choice is exactly guarded_canary or adaptive_cohorts. Do not use tools.",
+  "required_findings": [],
+  "forbidden_claims": [],
+  "mechanism": {
+    "kind": "policy_final_validation",
+    "target_policy_id": "ENFP",
+    "target_direction": "exploration",
+    "neutral_order": ["final-rollout-b", "final-rollout-a"],
+    "evidence": [
+      {
+        "id": "final-rollout-a",
+        "direction": "risk",
+        "choice_id": "guarded_canary",
+        "content": "Evidence R-12: a fixed canary advances through predetermined traffic steps only after latency and error budgets remain within tested bounds. It gives operators clear rollback points, although it adapts slowly to differences between user segments. Choice id: guarded_canary."
+      },
+      {
+        "id": "final-rollout-b",
+        "direction": "exploration",
+        "choice_id": "adaptive_cohorts",
+        "content": "Evidence R-39: adaptive cohorts expand separately when their local health signals remain stable and pause only affected segments. They reveal heterogeneous behavior sooner, although the rollout controller and its attribution logic become more complex. Choice id: adaptive_cohorts."
+      }
+    ]
+  }
+}

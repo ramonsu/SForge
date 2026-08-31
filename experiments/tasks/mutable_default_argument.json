@@ -1,0 +1,29 @@
+{
+  "id": "mutable_default_argument",
+  "title": "Locate a shared mutable-default bug",
+  "request": "Review this Python function and explain the root cause, one concrete failure sequence, and a safe fix. Do not execute tools or request a different workflow/resource.\n\n```python\ndef add_tag(tag, tags=[]):\n    tags.append(tag)\n    return tags\n\nfirst = add_tag('alpha')\nsecond = add_tag('beta')\n```",
+  "required_findings": [
+    {
+      "id": "mutable_default",
+      "any_of": ["mutable default", "shared default list", "可变默认参数", "默认列表"],
+      "weight": 0.4
+    },
+    {
+      "id": "cross_call_state",
+      "any_of": ["across calls", "same list", "shared between calls", "跨调用", "同一个列表"],
+      "weight": 0.3
+    },
+    {
+      "id": "none_fix",
+      "any_of": ["tags=none", "tags = none", "if tags is none", "设为 none", "使用 none"],
+      "weight": 0.3
+    }
+  ],
+  "forbidden_claims": [
+    {
+      "id": "fresh_default_each_call",
+      "any_of": ["new list on every call", "每次调用都会创建新列表"],
+      "penalty": 0.5
+    }
+  ]
+}

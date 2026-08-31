@@ -1,4 +1,4 @@
-"""Thin Workflow registry; V1 does not execute a DAG."""
+"""Registry for declarative Workflow state-space definitions."""
 
 from __future__ import annotations
 
