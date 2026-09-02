@@ -354,6 +354,24 @@ class RunService:
                 {
                     "memory_count": data.get("memory_count", 0),
                     "capability_count": data.get("capability_count", 0),
+                    "candidate_memory_count": data.get(
+                        "candidate_memory_count", 0
+                    ),
+                    "selected_memory_count": data.get(
+                        "selected_memory_count", 0
+                    ),
+                    "deduplicated_memory_count": data.get(
+                        "deduplicated_memory_count", 0
+                    ),
+                    "budget_dropped_memory_count": data.get(
+                        "budget_dropped_memory_count", 0
+                    ),
+                    "estimated_context_tokens": data.get(
+                        "estimated_context_tokens", 0
+                    ),
+                    "region_size_estimates": data.get(
+                        "region_size_estimates", {}
+                    ),
                 },
             )
         elif event.type is EventType.REASONING_STARTED:

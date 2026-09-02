@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 import json
 from typing import Any, Iterable, Literal
 
@@ -124,6 +125,10 @@ class RuntimeEngine:
             | WorkAssignmentAdmission
             | ResourceBindingAdmission,
         ] = {}
+        self._binding_request_results: dict[
+            tuple[str, str],
+            tuple[tuple[str, str, str | None], ResourceBindingAdmission],
+        ] = {}
 
     def create_agent(
         self,
@@ -156,6 +161,7 @@ class RuntimeEngine:
                 memory_scope="core",
                 memory_scopes=("core",),
             )
+            self._restore_identity_continuity(process.id)
         except Exception as exc:
             self._emit(
                 EventType.ERROR,
@@ -170,13 +176,21 @@ class RuntimeEngine:
         self._emit(
             EventType.AGENT_CREATED,
             agent_id=process.id,
+            trace_id=self._agents.runtime_state(process.id).task_id,
             data={
                 "mode": "direct",
                 "status": process.status.value,
                 "workspace_catalog_id": self._workspace_id,
                 "identity_id": self._identity.id,
-                "cognitive_policy_id": None,
-                "profession_ids": [],
+                "cognitive_policy_id": self._agents.runtime_state(
+                    process.id
+                ).cognitive_policy_id,
+                "profession_ids": list(
+                    self._agents.runtime_state(process.id).profession_ids
+                ),
+                "resumed_assignment_id": self._agents.runtime_state(
+                    process.id
+                ).assignment_id,
             },
         )
         return process
@@ -184,10 +198,10 @@ class RuntimeEngine:
     def terminate_agent(
         self, agent_id: str, reason: str | None = None
     ) -> AgentProcess:
-        process = self._agents.process(agent_id)
-        if process.status in {AgentStatus.RUNNING, AgentStatus.WAITING}:
-            self.end_work_assignment(agent_id, reason=reason)
         self._observations.pop(agent_id, None)
+        for key in tuple(self._binding_request_results):
+            if key[0] == agent_id:
+                self._binding_request_results.pop(key, None)
         return self._agents.terminate(agent_id)
 
     def build_context(self, agent_id: str) -> OperationalContext:
@@ -214,56 +228,52 @@ class RuntimeEngine:
                 "target_state_id": request.target_state_id,
             },
         )
+        current_assignment = self._agents.current_assignment(agent_id)
+        if current_assignment is None or current.workflow_id is None:
+            result = WorkflowAdmission(
+                request_id=request.request_id,
+                status="rejected",
+                workflow_id=request.workflow_id,
+                previous_state_id=current.workflow_state_id,
+                workflow_state_id=current.workflow_state_id,
+                error=(
+                    "Workflow 初始进入必须通过包含 role_id、workspace_id "
+                    "和 workflow_id 的 WorkAssignmentRequest；"
+                    "WorkflowRequest 只用于活动 Assignment 的状态迁移"
+                ),
+            )
+            self._emit_workflow_admission(agent_id, result)
+            return result
         try:
             definition = self._workflows.get(request.workflow_id)
-            if current.workflow_id is None:
-                target_state_id = (
-                    request.target_state_id or definition.initial_state
+            if current.workflow_id != request.workflow_id:
+                raise InvalidWorkflowStateError(
+                    "一个 WorkAssignment 内不能切换到另一个 Workflow"
                 )
-                if target_state_id != definition.initial_state:
-                    raise InvalidWorkflowStateError(
-                        "首次准入只能进入 Workflow initial_state"
-                    )
-                if request.transition_condition is not None:
-                    raise InvalidWorkflowStateError(
-                        "首次准入不接受 transition_condition"
-                    )
-                previous_state_id = None
-            else:
-                if current.workflow_id != request.workflow_id:
-                    raise InvalidWorkflowStateError(
-                        "一个 Agent Run 内不能切换到另一个 Workflow"
-                    )
-                previous_state_id = current.workflow_state_id
-                if request.target_state_id is None:
-                    raise InvalidWorkflowStateError(
-                        "Workflow 状态迁移必须声明 target_state_id"
-                    )
-                if request.transition_condition is None:
-                    raise InvalidWorkflowStateError(
-                        "Workflow 状态迁移必须声明 transition_condition"
-                    )
-                target_state_id = request.target_state_id
-                matches = [
-                    edge
-                    for edge in definition.outgoing(previous_state_id or "")
-                    if edge.target == target_state_id
-                    and edge.condition == request.transition_condition
-                ]
-                if not matches:
-                    raise InvalidWorkflowStateError(
-                        "请求的迁移边未在当前 Workflow State 中声明"
-                    )
+            previous_state_id = current.workflow_state_id
+            if request.target_state_id is None:
+                raise InvalidWorkflowStateError(
+                    "Workflow 状态迁移必须声明 target_state_id"
+                )
+            if request.transition_condition is None:
+                raise InvalidWorkflowStateError(
+                    "Workflow 状态迁移必须声明 transition_condition"
+                )
+            target_state_id = request.target_state_id
+            matches = [
+                edge
+                for edge in definition.outgoing(previous_state_id or "")
+                if edge.target == target_state_id
+                and edge.condition == request.transition_condition
+            ]
+            if not matches:
+                raise InvalidWorkflowStateError(
+                    "请求的迁移边未在当前 Workflow State 中声明"
+                )
 
             state = definition.states[target_state_id]
-            current_assignment = self._agents.current_assignment(agent_id)
-            assignment_offered = state.allowed_capabilities
-            assignment_grants = (
-                assignment_offered
-                if current_assignment is None
-                else state.allowed_capabilities.intersection(
-                    current_assignment.grants
-                )
+            assignment_grants = state.allowed_capabilities.intersection(
+                current_assignment.grants
             )
             allowed = self._basic_capabilities.union(assignment_grants)
             for capability_id in allowed:
@@ -279,47 +289,14 @@ class RuntimeEngine:
             memory_scope = self._resolve_memory_scope(
                 state.memory_write_scope, current.task_id, definition.id
             )
-            if current_assignment is None:
-                self._roles.get(self._default_work_role_id)
-                assignment = self._agents.bind_work_assignment(
-                    agent_id,
-                    role_id=self._default_work_role_id,
-                    workspace_id=self._workspace_id,
-                    task_id=current.task_id,
-                    workflow_id=definition.id,
-                    grants=assignment_grants,
-                    effective_capabilities=allowed,
-                    workflow_state_id=state.id,
-                    memory_scope=memory_scope,
-                    memory_scopes=memory_scopes,
-                )
-                mounted = self._agents.runtime_state(agent_id)
-                self._record_assignment_started(assignment)
-                self._emit_work_assignment_admission(
-                    agent_id,
-                    WorkAssignmentAdmission(
-                        request_id=request.request_id,
-                        status="success",
-                        assignment_id=assignment.id,
-                        role_id=assignment.role_id,
-                        workspace_id=assignment.workspace_id,
-                        task_id=assignment.task_id,
-                        workflow_id=assignment.workflow_id,
-                        workflow_state_id=mounted.workflow_state_id,
-                        memory_scope=mounted.memory_scope,
-                        memory_scopes=mounted.memory_scopes,
-                        grants=assignment.grants,
-                    ),
-                )
-            else:
-                mounted = self._agents.mount_workflow_state(
-                    agent_id,
-                    workflow_id=definition.id,
-                    workflow_state_id=state.id,
-                    allowed_capabilities=allowed,
-                    memory_scope=memory_scope,
-                    memory_scopes=memory_scopes,
-                )
+            mounted = self._agents.mount_workflow_state(
+                agent_id,
+                workflow_id=definition.id,
+                workflow_state_id=state.id,
+                allowed_capabilities=allowed,
+                memory_scope=memory_scope,
+                memory_scopes=memory_scopes,
+            )
         except (
             WorkflowNotFoundError,
             InvalidWorkflowStateError,
@@ -569,11 +546,49 @@ class RuntimeEngine:
                 "resource_id": request.resource_id,
             },
         )
+        signature = (
+            request.resource_type,
+            request.operation,
+            request.resource_id,
+        )
+        cache_key = (agent_id, request.request_id)
+        cached = self._binding_request_results.get(cache_key)
+        if cached is not None:
+            cached_signature, cached_result = cached
+            if cached_signature != signature:
+                result = ResourceBindingAdmission(
+                    request_id=request.request_id,
+                    status="rejected",
+                    resource_type=request.resource_type,
+                    operation=request.operation,
+                    resource_id=request.resource_id,
+                    cognitive_policy_id=current.cognitive_policy_id,
+                    profession_ids=current.profession_ids,
+                    changed=False,
+                    replayed=True,
+                    error="同一 request_id 不能用于不同 ResourceBindingRequest",
+                )
+            else:
+                result = ResourceBindingAdmission(
+                    request_id=cached_result.request_id,
+                    status=cached_result.status,
+                    resource_type=cached_result.resource_type,
+                    operation=cached_result.operation,
+                    resource_id=cached_result.resource_id,
+                    cognitive_policy_id=current.cognitive_policy_id,
+                    profession_ids=current.profession_ids,
+                    changed=False,
+                    replayed=True,
+                    error=cached_result.error,
+                )
+            self._emit_binding_admission(agent_id, result)
+            return result
         try:
             if request.operation not in {"activate", "deactivate"}:
                 raise InvalidResourceBindingError("未知 binding operation")
             policy_id = current.cognitive_policy_id
             profession_ids = list(current.profession_ids)
+            changed = False
             resource_id = request.resource_id.strip() if request.resource_id else None
             if request.resource_type == "cognitive_policy":
                 if request.operation == "activate":
@@ -581,12 +596,15 @@ class RuntimeEngine:
                         raise InvalidResourceBindingError(
                             "激活 CognitivePolicy 必须提供 resource_id"
                         )
-                    policy_id = self._policies.get(resource_id).id
+                    resolved_policy = self._policies.get(resource_id).id
+                    changed = resolved_policy != policy_id
+                    policy_id = resolved_policy
                 else:
                     if resource_id and resource_id.upper() != policy_id:
                         raise InvalidResourceBindingError(
                             "待解绑 CognitivePolicy 不是当前活动资源"
                         )
+                    changed = policy_id is not None
                     policy_id = None
             elif request.resource_type == "profession":
                 if request.operation == "activate":
@@ -597,25 +615,30 @@ class RuntimeEngine:
                     profession_id = self._professions.get(resource_id).id
                     if profession_id not in profession_ids:
                         profession_ids.append(profession_id)
+                        changed = True
                 else:
                     if not resource_id or resource_id not in profession_ids:
                         raise InvalidResourceBindingError(
                             "待解绑 Profession 不是当前活动资源"
                         )
                     profession_ids.remove(resource_id)
+                    changed = True
             else:
                 raise InvalidResourceBindingError("未知 resource_type")
-            memory_scopes = self._binding_memory_scopes(
-                current,
-                profession_ids=tuple(profession_ids),
-            )
-            mounted = self._agents.mount_resources(
-                agent_id,
-                cognitive_policy_id=policy_id,
-                profession_ids=tuple(profession_ids),
-                memory_scope=current.memory_scope,
-                memory_scopes=memory_scopes,
-            )
+            if changed:
+                memory_scopes = self._binding_memory_scopes(
+                    current,
+                    profession_ids=tuple(profession_ids),
+                )
+                mounted = self._agents.mount_resources(
+                    agent_id,
+                    cognitive_policy_id=policy_id,
+                    profession_ids=tuple(profession_ids),
+                    memory_scope=current.memory_scope,
+                    memory_scopes=memory_scopes,
+                )
+            else:
+                mounted = current
         except (InvalidResourceBindingError, KeyError) as exc:
             result = ResourceBindingAdmission(
                 request_id=request.request_id,
@@ -625,7 +648,12 @@ class RuntimeEngine:
                 resource_id=request.resource_id,
                 cognitive_policy_id=current.cognitive_policy_id,
                 profession_ids=current.profession_ids,
+                changed=False,
                 error=str(exc),
+            )
+            self._binding_request_results[cache_key] = (
+                signature,
+                result,
             )
             self._emit_binding_admission(agent_id, result)
             return result
@@ -638,7 +666,9 @@ class RuntimeEngine:
             resource_id=request.resource_id,
             cognitive_policy_id=mounted.cognitive_policy_id,
             profession_ids=mounted.profession_ids,
+            changed=changed,
         )
+        self._binding_request_results[cache_key] = (signature, result)
         self._emit_binding_admission(agent_id, result)
         return result
 
@@ -789,7 +819,6 @@ class RuntimeEngine:
                         "usage": rendered.usage.as_dict(),
                     },
                 )
-                self.end_work_assignment(agent_id)
                 self._agents.complete(agent_id)
                 self._observations.pop(agent_id, None)
                 return FinalAnswer(
@@ -911,11 +940,81 @@ class RuntimeEngine:
         )
 
     def close(self) -> None:
-        for process in self._agents.processes_snapshot():
-            if process.status in {AgentStatus.RUNNING, AgentStatus.WAITING}:
-                self.end_work_assignment(process.id, reason="Runtime closed")
         self._agents.close()
         self._memory.close()
+
+    def _restore_identity_continuity(self, agent_id: str) -> None:
+        """Recompute process-local views from identity-level primitive facts."""
+
+        state = self._agents.runtime_state(agent_id)
+        assignment = self._agents.current_assignment(agent_id)
+        if assignment is None:
+            if state.cognitive_policy_id or state.profession_ids:
+                self._agents.mount_resources(
+                    agent_id,
+                    cognitive_policy_id=state.cognitive_policy_id,
+                    profession_ids=state.profession_ids,
+                    memory_scope="core",
+                    memory_scopes=self._binding_memory_scopes(
+                        state,
+                        profession_ids=state.profession_ids,
+                        include_workflow=False,
+                    ),
+                )
+            return
+
+        if assignment.workspace_id != self._workspace_id:
+            raise InvalidWorkAssignmentError(
+                "活动 WorkAssignment 不属于当前 Runtime Workspace"
+            )
+        grants = assignment.grants
+        for capability_id in grants:
+            self._capabilities.get(capability_id)
+        if assignment.workflow_id is None:
+            effective = self._basic_capabilities.union(grants)
+            memory_scopes = list(
+                self._binding_memory_scopes(
+                    state,
+                    profession_ids=state.profession_ids,
+                    include_workflow=False,
+                )
+            )
+            workspace_scope = f"workspace:{assignment.workspace_id}"
+            if workspace_scope not in memory_scopes:
+                memory_scopes.append(workspace_scope)
+            memory_scope = workspace_scope
+        else:
+            definition = self._workflows.get(assignment.workflow_id)
+            workflow_state_id = (
+                assignment.workflow_state_id or definition.initial_state
+            )
+            workflow_state = definition.states[workflow_state_id]
+            effective = self._basic_capabilities.union(
+                grants.intersection(
+                    workflow_state.allowed_capabilities
+                )
+            )
+            memory_scopes = list(
+                self._assignment_memory_scopes(
+                    workflow_state.memory_scopes,
+                    assignment.task_id,
+                    definition.id,
+                    state.identity_id,
+                    assignment.workspace_id,
+                    state.profession_ids,
+                )
+            )
+            memory_scope = self._resolve_memory_scope(
+                workflow_state.memory_write_scope,
+                assignment.task_id,
+                definition.id,
+            )
+        self._agents.resume_work_assignment(
+            agent_id,
+            effective_capabilities=effective,
+            memory_scope=memory_scope,
+            memory_scopes=tuple(memory_scopes),
+        )
 
     def _bundle(self, agent_id: str) -> ContextBundle:
         process = self._agents.require_active(agent_id)
@@ -942,6 +1041,24 @@ class RuntimeEngine:
                     if self._agents.current_assignment(agent_id)
                     else None
                 ),
+                "candidate_memory_count": bundle.retrieval_trace.get(
+                    "candidate_memory_count", 0
+                ),
+                "selected_memory_count": bundle.retrieval_trace.get(
+                    "selected_memory_count", 0
+                ),
+                "deduplicated_memory_count": bundle.retrieval_trace.get(
+                    "deduplicated_memory_count", 0
+                ),
+                "budget_dropped_memory_count": bundle.retrieval_trace.get(
+                    "budget_dropped_memory_count", 0
+                ),
+                "estimated_context_tokens": bundle.retrieval_trace.get(
+                    "estimated_context_tokens", 0
+                ),
+                "region_size_estimates": bundle.retrieval_trace.get(
+                    "region_size_estimates", {}
+                ),
             },
         )
         return bundle
@@ -964,14 +1081,18 @@ class RuntimeEngine:
             error=error,
             metadata={"stage": stage},
         )
+        serialized_result = json.dumps(result.as_dict(), ensure_ascii=False)
+        evidence_metadata = self._action_result_memory_metadata(
+            request, result
+        )
         state = self._agents.runtime_state(agent_id)
         if state.memory_scope != "core":
             self._memory.write(
                 MemoryRecord(
                     scope=state.memory_scope,
                     kind="runtime.action_result",
-                    content=json.dumps(result.as_dict(), ensure_ascii=False),
-                    metadata={"request_id": request.request_id},
+                    content=serialized_result,
+                    metadata=dict(evidence_metadata),
                 )
             )
         assignment = self._agents.current_assignment(agent_id)
@@ -983,10 +1104,10 @@ class RuntimeEngine:
                 MemoryRecord(
                     scope=workspace_scope,
                     kind="workspace.action_result",
-                    content=json.dumps(result.as_dict(), ensure_ascii=False),
+                    content=serialized_result,
                     metadata={
+                        **evidence_metadata,
                         "assignment_id": assignment.id,
-                        "request_id": request.request_id,
                         "role_id": assignment.role_id,
                         "task_id": assignment.task_id,
                     },
@@ -1003,6 +1124,56 @@ class RuntimeEngine:
             },
         )
         return result
+
+    @staticmethod
+    def _action_result_memory_metadata(
+        request: ActionRequest, result: ActionResult
+    ) -> dict[str, Any]:
+        output = result.output
+        if isinstance(output, str):
+            serialized_output = output
+        else:
+            serialized_output = json.dumps(
+                output,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                default=str,
+            )
+        arguments = json.dumps(
+            request.arguments,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+        resource_reference = next(
+            (
+                str(request.arguments[key])
+                for key in (
+                    "path",
+                    "uri",
+                    "url",
+                    "resource",
+                    "resource_id",
+                    "artifact_id",
+                )
+                if key in request.arguments
+                and isinstance(request.arguments[key], (str, int, float))
+            ),
+            None,
+        )
+        return {
+            "request_id": request.request_id,
+            "capability_id": request.capability_id,
+            "status": result.status,
+            "resource_reference": resource_reference,
+            "arguments_sha256": sha256(arguments.encode("utf-8")).hexdigest(),
+            "output_characters": len(serialized_output),
+            "output_sha256": sha256(
+                serialized_output.encode("utf-8")
+            ).hexdigest(),
+        }
 
     def _write_runtime_memory(
         self, agent_id: str, kind: str, content: str
@@ -1050,6 +1221,8 @@ class RuntimeEngine:
                 "cognitive_policy_id": result.cognitive_policy_id,
                 "profession_ids": list(result.profession_ids),
                 "status": result.status,
+                "changed": result.changed,
+                "replayed": result.replayed,
             },
         )
 

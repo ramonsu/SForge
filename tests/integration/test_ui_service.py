@@ -9,7 +9,7 @@ from ui import ProgressKind, RunService, RunStatus
 
 
 class RunServiceTests(unittest.TestCase):
-    def test_work_assignment_progress_updates_role_and_revokes_binding(self):
+    def test_work_assignment_progress_keeps_active_work_after_process(self):
         responses = [
             ReasoningResponse(
                 json.dumps(
@@ -37,14 +37,14 @@ class RunServiceTests(unittest.TestCase):
             service.subscribe(progress.append)
             try:
                 snapshot = service.wait(service.start("implement"), timeout=2)
-                self.assertIsNone(snapshot.work_role_id)
-                self.assertIsNone(snapshot.assignment_id)
+                self.assertEqual("developer", snapshot.work_role_id)
+                self.assertIsNotNone(snapshot.assignment_id)
                 kinds = {event.kind for event in progress}
                 self.assertIn(ProgressKind.WORK_ASSIGNMENT_REQUESTED, kinds)
                 self.assertIn(
                     ProgressKind.WORK_ASSIGNMENT_ADMISSION_COMPLETED, kinds
                 )
-                self.assertIn(ProgressKind.WORK_ASSIGNMENT_ENDED, kinds)
+                self.assertNotIn(ProgressKind.WORK_ASSIGNMENT_ENDED, kinds)
             finally:
                 service.close()
 
@@ -104,7 +104,8 @@ class RunServiceTests(unittest.TestCase):
             ReasoningResponse(
                 json.dumps(
                     {
-                        "type": "workflow",
+                        "type": "assignment",
+                        "role_id": "author",
                         "workflow_id": "novel_writing",
                     }
                 ),
@@ -127,12 +128,12 @@ class RunServiceTests(unittest.TestCase):
                 snapshot = service.wait(
                     service.start("write", "novel_writing"), timeout=2
                 )
-                self.assertIsNone(snapshot.workflow_id)
-                self.assertIsNone(snapshot.workflow_state_id)
+                self.assertEqual("novel_writing", snapshot.workflow_id)
+                self.assertEqual("creation", snapshot.workflow_state_id)
                 kinds = [event.kind for event in progress]
-                self.assertIn(ProgressKind.WORKFLOW_REQUESTED, kinds)
+                self.assertIn(ProgressKind.WORK_ASSIGNMENT_REQUESTED, kinds)
                 self.assertIn(
-                    ProgressKind.WORKFLOW_ADMISSION_COMPLETED, kinds
+                    ProgressKind.WORK_ASSIGNMENT_ADMISSION_COMPLETED, kinds
                 )
             finally:
                 service.close()

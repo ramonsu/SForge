@@ -140,7 +140,7 @@ class V6RuntimeInvariantScenarios(unittest.TestCase):
             finally:
                 harness.close()
 
-    def test_final_answer_closes_assignment_and_records_revocation(self):
+    def test_final_answer_completes_process_but_keeps_assignment_active(self):
         with tempfile.TemporaryDirectory() as workspace:
             harness, _, memory, _ = build_harness(
                 workspace,
@@ -177,11 +177,14 @@ class V6RuntimeInvariantScenarios(unittest.TestCase):
 
                 self.assertIsInstance(result, FinalAnswer)
                 self.assertEqual("reviewed", result.content)
-                self.assertIsNone(state.assignment_id)
-                self.assertEqual({"echo"}, set(state.allowed_capabilities))
+                self.assertIsNotNone(state.assignment_id)
+                self.assertEqual(
+                    {"echo", "filesystem.read"},
+                    set(state.allowed_capabilities),
+                )
                 self.assertEqual("INTJ", state.cognitive_policy_id)
                 self.assertEqual(("software_engineering",), state.profession_ids)
-                self.assertIn(
+                self.assertNotIn(
                     "workspace.assignment_ended", {item.kind for item in archive}
                 )
             finally:

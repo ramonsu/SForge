@@ -10,6 +10,7 @@ from harness.models import (
     CapabilityDescriptor,
     MemoryRecord,
     TaskSpec,
+    WorkAssignmentRequest,
     WorkflowRequest,
 )
 from tests.support.runtime_factory import build_harness
@@ -288,8 +289,11 @@ class RuntimeInspectorTests(unittest.TestCase):
                     AgentStatus.RUNNING, harness.process(process.id).status
                 )
 
-                admission = harness.request_workflow(
-                    process.id, WorkflowRequest("general_task")
+                admission = harness.request_work_assignment(
+                    process.id,
+                    WorkAssignmentRequest(
+                        "generalist", workflow_id="general_task"
+                    ),
                 )
                 self.assertEqual("success", admission.status)
                 mounted = harness.inspect(process.id).as_dict()
@@ -310,8 +314,11 @@ class RuntimeInspectorTests(unittest.TestCase):
             harness, _, _, _ = build_harness(workspace)
             try:
                 process = harness.create_agent("novel", "novel_writing")
-                harness.request_workflow(
-                    process.id, WorkflowRequest("novel_writing")
+                harness.request_work_assignment(
+                    process.id,
+                    WorkAssignmentRequest(
+                        "author", workflow_id="novel_writing"
+                    ),
                 )
                 snapshot = harness.inspect(process.id).as_dict()
                 self.assertEqual(

@@ -38,7 +38,9 @@ class AgentManager:
         self._tasks: dict[str, TaskSpec] = {}
         self._agents: dict[str, Agent] = {}
         self._assignments: dict[str, WorkAssignment] = {}
-        self._current_assignments: dict[str, str] = {}
+        self._identity_assignments: dict[str, str] = {}
+        self._identity_cognitive_policies: dict[str, str | None] = {}
+        self._identity_professions: dict[str, tuple[str, ...]] = {}
 
     def create(
         self,
@@ -55,12 +57,27 @@ class AgentManager:
         model_ref: str | None = None,
     ) -> AgentProcess:
         persistent_identity = identity
+        resumable_assignment = self._resumable_assignment(
+            persistent_identity.id
+        )
+        if resumable_assignment is not None:
+            task = TaskSpec(
+                request=task.request,
+                id=resumable_assignment.task_id,
+                context=dict(task.context),
+            )
         agent_id = uuid4().hex
         runtime = RuntimeState(
             agent_id=agent_id,
             task_id=task.id,
             mode=mode,
             identity_id=persistent_identity.id,
+            cognitive_policy_id=self._identity_cognitive_policies.get(
+                persistent_identity.id
+            ),
+            profession_ids=self._identity_professions.get(
+                persistent_identity.id, ()
+            ),
             workflow_id=workflow_id,
             workflow_state_id=workflow_state_id,
             allowed_capabilities=allowed_capabilities,
@@ -81,6 +98,17 @@ class AgentManager:
         self._agents[agent_id] = Agent(
             process, persistent_identity, persona, self.processes
         )
+        if resumable_assignment is not None:
+            mutable_assignment = self._assignments[
+                resumable_assignment.id
+            ]
+            # The field identifies the current attachment, not the creator.
+            mutable_assignment.agent_process_id = agent_id
+            runtime.assignment_id = mutable_assignment.id
+            runtime.workflow_id = mutable_assignment.workflow_id
+            runtime.workflow_state_id = (
+                mutable_assignment.workflow_state_id
+            )
         return process.snapshot()
 
     def mount_resources(
@@ -98,6 +126,12 @@ class AgentManager:
         runtime = self._runtime_states[agent_id]
         runtime.cognitive_policy_id = cognitive_policy_id
         runtime.profession_ids = tuple(profession_ids)
+        self._identity_cognitive_policies[
+            runtime.identity_id
+        ] = cognitive_policy_id
+        self._identity_professions[runtime.identity_id] = tuple(
+            profession_ids
+        )
         runtime.memory_scope = memory_scope
         runtime.memory_scopes = tuple(memory_scopes)
         runtime.version += 1
@@ -127,6 +161,7 @@ class AgentManager:
         if assignment is not None:
             mutable = self._assignments[assignment.id]
             mutable.workflow_id = workflow_id
+            mutable.workflow_state_id = workflow_state_id
         runtime.version += 1
         return runtime.snapshot()
 
@@ -169,10 +204,11 @@ class AgentManager:
             role_id=role_id,
             task_id=task_id,
             workflow_id=workflow_id,
+            workflow_state_id=workflow_state_id,
             grants=frozenset(grants),
         )
         self._assignments[assignment.id] = assignment
-        self._current_assignments[agent_id] = assignment.id
+        self._identity_assignments[runtime.identity_id] = assignment.id
         runtime.assignment_id = assignment.id
         runtime.mode = "workflow" if workflow_id else "direct"
         runtime.workflow_id = workflow_id
@@ -182,6 +218,31 @@ class AgentManager:
         runtime.memory_scopes = tuple(memory_scopes)
         runtime.version += 1
         return assignment.snapshot()
+
+    def resume_work_assignment(
+        self,
+        agent_id: str,
+        *,
+        effective_capabilities: frozenset[str],
+        memory_scope: str,
+        memory_scopes: tuple[str, ...],
+    ) -> WorkAssignment | None:
+        """Reattach one active identity-level Assignment to a new Process."""
+
+        self.require_active(agent_id)
+        assignment = self.current_assignment(agent_id)
+        if assignment is None:
+            return None
+        runtime = self._runtime_states[agent_id]
+        runtime.assignment_id = assignment.id
+        runtime.mode = "workflow" if assignment.workflow_id else "direct"
+        runtime.workflow_id = assignment.workflow_id
+        runtime.workflow_state_id = assignment.workflow_state_id
+        runtime.allowed_capabilities = frozenset(effective_capabilities)
+        runtime.memory_scope = memory_scope
+        runtime.memory_scopes = tuple(memory_scopes)
+        runtime.version += 1
+        return assignment
 
     def end_work_assignment(
         self,
@@ -198,8 +259,8 @@ class AgentManager:
         mutable = self._assignments[current.id]
         mutable.status = "ended"
         mutable.ended_at = utc_now()
-        self._current_assignments.pop(agent_id, None)
         runtime = self._runtime_states[agent_id]
+        self._identity_assignments.pop(runtime.identity_id, None)
         runtime.assignment_id = None
         runtime.mode = "direct"
         runtime.workflow_id = None
@@ -211,11 +272,20 @@ class AgentManager:
         return mutable.snapshot()
 
     def current_assignment(self, agent_id: str) -> WorkAssignment | None:
+        """Return the active Assignment only for its currently attached Process."""
+
         self._mutable(agent_id)
-        assignment_id = self._current_assignments.get(agent_id)
+        runtime = self._runtime_states[agent_id]
+        assignment_id = self._identity_assignments.get(runtime.identity_id)
         if assignment_id is None:
             return None
-        return self._assignments[assignment_id].snapshot()
+        assignment = self._assignments[assignment_id]
+        if (
+            assignment.status != "active"
+            or assignment.agent_process_id != agent_id
+        ):
+            return None
+        return assignment.snapshot()
 
     def assignments_snapshot(self) -> tuple[WorkAssignment, ...]:
         return tuple(item.snapshot() for item in self._assignments.values())
@@ -276,6 +346,22 @@ class AgentManager:
             return self._processes[agent_id]
         except KeyError as exc:
             raise AgentNotFoundError(f"Agent 不存在: {agent_id}") from exc
+
+    def _resumable_assignment(
+        self, identity_id: str
+    ) -> WorkAssignment | None:
+        """Find an Identity Assignment whose previous attachment is terminal."""
+
+        assignment_id = self._identity_assignments.get(identity_id)
+        if assignment_id is None:
+            return None
+        assignment = self._assignments[assignment_id]
+        if assignment.status != "active":
+            return None
+        owner = self._processes.get(assignment.agent_process_id)
+        if owner is not None and owner.status not in TERMINAL_AGENT_STATUSES:
+            return None
+        return assignment.snapshot()
 
     def _transition(
         self, agent_id: str, target: AgentStatus, *, stop: bool = False

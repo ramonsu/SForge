@@ -25,6 +25,16 @@ boundary: Agent ownership stays minimal, model-facing operational context keeps
 exactly four top-level regions, experiment treatment names stay outside the core,
 and Assignment cleanup does not detach long-lived Policy or Profession resources.
 
+`runtime/test_runtime_continuity.py` proves that a new disposable Process can
+reconstruct the same Life / Profession / Work relationship from Runtime-owned
+facts, while a new Runtime recovers only the explicitly persistent configuration,
+SQLite Memory and Workspace files.
+
+`runtime/test_context_economy.py` proves that large ActionResult payloads remain
+durable evidence without being replayed wholesale, duplicate evidence is removed
+from the model projection, four-region budgets are enforced, and the same
+Assignment/Policy/Profession/Workflow still resumes in a fresh Process.
+
 Run the environment-independent suite with the project’s existing test runner:
 
 ```powershell

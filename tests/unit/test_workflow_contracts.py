@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from harness.errors import InvalidWorkflowStateError, WorkflowNotFoundError
-from harness.models import TaskSpec, WorkflowRequest
+from harness.models import TaskSpec, WorkAssignmentRequest, WorkflowRequest
 from harness.workflow_loader import WorkflowLoader
 from harness.workflow_manager import WorkflowRegistry
 from tests.support.runtime_factory import build_harness
@@ -102,8 +102,11 @@ class WorkflowRegistryTests(unittest.TestCase):
                     before.task["context"]["requested_workflow_id"],
                 )
 
-                admission = harness.request_workflow(
-                    workflow.id, WorkflowRequest("general_task")
+                admission = harness.request_work_assignment(
+                    workflow.id,
+                    WorkAssignmentRequest(
+                        "generalist", workflow_id="general_task"
+                    ),
                 )
                 self.assertEqual("success", admission.status)
                 workflow_context = harness.build_context(workflow.id)

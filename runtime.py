@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Mapping
 
 from capabilities import builtins
 from harness.agent_manager import AgentManager, ProcessSupervisor
@@ -39,6 +40,10 @@ def create_runtime(
     workspace_id: str | None = None,
     policy_strength: float = 1.0,
     model_projection_override: ModelProjectionOverride | None = None,
+    total_context_budget: int = 12_000,
+    region_context_budgets: Mapping[str, int] | None = None,
+    max_memory_records: int = 20,
+    action_result_excerpt_characters: int = 1_200,
 ) -> Harness:
     memory_provider = memory or SQLiteMemoryProvider()
     _bootstrap_core_memory(memory_provider)
@@ -66,6 +71,12 @@ def create_runtime(
         workspace,
         policy_strength=policy_strength,
         model_projection_override=model_projection_override,
+        total_context_budget=total_context_budget,
+        region_context_budgets=region_context_budgets,
+        max_memory_records=max_memory_records,
+        action_result_excerpt_characters=(
+            action_result_excerpt_characters
+        ),
     )
     return Harness(
         RuntimeEngine(

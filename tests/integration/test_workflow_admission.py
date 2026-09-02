@@ -2,7 +2,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from harness.models import ActionRequest, TaskSpec, WorkflowRequest
+from harness.models import (
+    ActionRequest,
+    TaskSpec,
+    WorkAssignmentRequest,
+    WorkflowRequest,
+)
 from tests.support.runtime_factory import build_harness
 
 
@@ -29,7 +34,7 @@ class WorkflowAdmissionTests(unittest.TestCase):
             finally:
                 harness.close()
 
-    def test_initial_admission_mounts_one_state_atomically(self):
+    def test_initial_workflow_entry_requires_explicit_assignment(self):
         with tempfile.TemporaryDirectory() as workspace:
             harness, _, _, _ = build_harness(workspace)
             try:
@@ -42,8 +47,17 @@ class WorkflowAdmissionTests(unittest.TestCase):
                 )
                 self.assertEqual("rejected", before.status)
 
-                admission = harness.request_workflow(
+                rejected = harness.request_workflow(
                     process.id, WorkflowRequest("novel_writing")
+                )
+                self.assertEqual("rejected", rejected.status)
+                self.assertIn("WorkAssignmentRequest", rejected.error)
+
+                admission = harness.request_work_assignment(
+                    process.id,
+                    WorkAssignmentRequest(
+                        "author", workflow_id="novel_writing"
+                    ),
                 )
                 self.assertEqual("success", admission.status)
                 self.assertEqual("creation", admission.workflow_state_id)
@@ -60,7 +74,7 @@ class WorkflowAdmissionTests(unittest.TestCase):
                     ),
                     admission.memory_scopes,
                 )
-                self.assertIn("filesystem.write", admission.allowed_capabilities)
+                self.assertIn("filesystem.write", admission.grants)
 
                 state = harness.runtime_state(process.id)
                 context = harness.build_context(process.id)
@@ -83,17 +97,22 @@ class WorkflowAdmissionTests(unittest.TestCase):
             try:
                 process = harness.create_agent("novel")
                 bootstrap = harness.runtime_state(process.id)
-                rejected = harness.request_workflow(
+                rejected = harness.request_work_assignment(
                     process.id,
-                    WorkflowRequest(
-                        "novel_writing", target_state_id="review"
+                    WorkAssignmentRequest(
+                        "author",
+                        workflow_id="novel_writing",
+                        target_state_id="review",
                     ),
                 )
                 self.assertEqual("rejected", rejected.status)
                 self.assertEqual(bootstrap, harness.runtime_state(process.id))
 
-                harness.request_workflow(
-                    process.id, WorkflowRequest("novel_writing")
+                harness.request_work_assignment(
+                    process.id,
+                    WorkAssignmentRequest(
+                        "author", workflow_id="novel_writing"
+                    ),
                 )
                 creation = harness.runtime_state(process.id)
                 bad_edge = harness.request_workflow(
@@ -120,8 +139,11 @@ class WorkflowAdmissionTests(unittest.TestCase):
             harness, _, _, _ = build_harness(workspace)
             try:
                 process = harness.create_agent("revise a novel")
-                harness.request_workflow(
-                    process.id, WorkflowRequest("novel_writing")
+                harness.request_work_assignment(
+                    process.id,
+                    WorkAssignmentRequest(
+                        "author", workflow_id="novel_writing"
+                    ),
                 )
                 revision = harness.request_workflow(
                     process.id,

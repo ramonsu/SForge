@@ -252,6 +252,70 @@ class V16BindingAndAuthorityTests(unittest.TestCase):
             finally:
                 harness.close()
 
+    def test_resource_binding_noop_and_request_replay_do_not_mutate_state(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            harness, _, _, _ = build_harness(workspace)
+            try:
+                process = harness.create_agent("bind once")
+                request = ResourceBindingRequest(
+                    "profession",
+                    "activate",
+                    "software_engineering",
+                    request_id="binding-1",
+                )
+                first = harness.request_binding(process.id, request)
+                first_state = harness.runtime_state(process.id)
+                replay = harness.request_binding(process.id, request)
+                replay_state = harness.runtime_state(process.id)
+                noop = harness.request_binding(
+                    process.id,
+                    ResourceBindingRequest(
+                        "profession",
+                        "activate",
+                        "software_engineering",
+                        request_id="binding-2",
+                    ),
+                )
+                noop_state = harness.runtime_state(process.id)
+                collision = harness.request_binding(
+                    process.id,
+                    ResourceBindingRequest(
+                        "cognitive_policy",
+                        "activate",
+                        "INTJ",
+                        request_id="binding-1",
+                    ),
+                )
+
+                self.assertTrue(first.changed)
+                self.assertFalse(first.replayed)
+                self.assertFalse(replay.changed)
+                self.assertTrue(replay.replayed)
+                self.assertFalse(noop.changed)
+                self.assertFalse(noop.replayed)
+                self.assertEqual("rejected", collision.status)
+                self.assertTrue(collision.replayed)
+                self.assertEqual(first_state, replay_state)
+                self.assertEqual(first_state, noop_state)
+                self.assertEqual(
+                    ("software_engineering",),
+                    noop_state.profession_ids,
+                )
+                self.assertIsNone(noop_state.cognitive_policy_id)
+                binding_events = [
+                    event
+                    for event in harness.recent_events(
+                        20, agent_id=process.id
+                    )
+                    if event.type.value == "resource_binding_completed"
+                ]
+                self.assertFalse(binding_events[-2].data["changed"])
+                self.assertFalse(binding_events[-2].data["replayed"])
+                self.assertFalse(binding_events[-1].data["changed"])
+                self.assertTrue(binding_events[-1].data["replayed"])
+            finally:
+                harness.close()
+
     def test_workspace_has_no_independent_binding_path(self):
         with tempfile.TemporaryDirectory() as workspace:
             harness, _, _, _ = build_harness(workspace)

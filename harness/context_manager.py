@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from typing import Any, Callable, Protocol
+from hashlib import sha256
+import json
+from math import ceil
+from typing import Any, Callable, Mapping, Protocol
 
 from harness.capability import CapabilityRegistry
 from harness.cognitive_policy import CognitivePolicy, CognitivePolicyRegistry
@@ -43,6 +46,8 @@ ModelProjectionOverride = Callable[
 
 
 class ContextManager:
+    _REGIONS = ("runtime_envelope", "life", "profession", "work")
+
     def __init__(
         self,
         memory: MemoryProvider,
@@ -57,6 +62,10 @@ class ContextManager:
         providers: tuple[ContextProvider, ...] = (),
         policy_strength: float = 1.0,
         model_projection_override: ModelProjectionOverride | None = None,
+        total_context_budget: int = 12_000,
+        region_context_budgets: Mapping[str, int] | None = None,
+        max_memory_records: int = 20,
+        action_result_excerpt_characters: int = 1_200,
     ):
         if (
             not isinstance(policy_strength, (int, float))
@@ -64,6 +73,30 @@ class ContextManager:
             or not 0.0 <= float(policy_strength) <= 1.0
         ):
             raise ValueError("policy_strength 必须在 0 到 1 之间")
+        if total_context_budget < 1:
+            raise ValueError("total_context_budget must be positive")
+        configured_regions = dict(
+            region_context_budgets
+            or {
+                "runtime_envelope": 2_000,
+                "life": 2_000,
+                "profession": 2_500,
+                "work": 5_500,
+            }
+        )
+        if set(configured_regions) != set(self._REGIONS):
+            raise ValueError("region_context_budgets must cover all four regions")
+        if any(
+            not isinstance(value, int) or isinstance(value, bool) or value < 1
+            for value in configured_regions.values()
+        ):
+            raise ValueError("region_context_budgets must contain positive integers")
+        if sum(configured_regions.values()) > total_context_budget:
+            raise ValueError("region budgets cannot exceed total_context_budget")
+        if max_memory_records < 1:
+            raise ValueError("max_memory_records must be positive")
+        if action_result_excerpt_characters < 1:
+            raise ValueError("action_result_excerpt_characters must be positive")
         self.memory = memory
         self.workflows = workflows
         self.roles = roles
@@ -75,6 +108,12 @@ class ContextManager:
         self.providers = providers
         self.policy_strength = float(policy_strength)
         self.model_projection_override = model_projection_override
+        self.total_context_budget = total_context_budget
+        self.region_context_budgets = configured_regions
+        self.max_memory_records = max_memory_records
+        self.action_result_excerpt_characters = (
+            action_result_excerpt_characters
+        )
 
     def build(
         self,
@@ -150,9 +189,8 @@ class ContextManager:
             policy,
             assignment,
         )
-        ranked_memory_records = [item[0] for item in ranked_with_scores[:20]]
-        operational_memory, _, _, _ = self._partition_memory(
-            ranked_memory_records
+        deduplicated_ranked, duplicate_records = self._deduplicate_ranked(
+            ranked_with_scores
         )
         _, preferences, history, communication = self._partition_memory(
             resource_relevant_records
@@ -160,7 +198,7 @@ class ContextManager:
         extensions = {}
         for provider in self.providers:
             extensions.update(provider.provide(runtime))
-        operational = OperationalContext(
+        operational_base = OperationalContext(
             system={
                 "runtime": "SForge V1.6",
                 "agent_id": process.id,
@@ -209,13 +247,40 @@ class ContextManager:
             capabilities=self.capabilities.descriptors(
                 runtime.allowed_capabilities
             ),
-            memory=tuple(operational_memory),
+            memory=(),
         )
         cognitive_projection = (
             policy.compile_model_projection() if policy else None
         )
+        ranked_memory_records, budget_dropped = self._select_memory_with_budget(
+            deduplicated_ranked,
+            operational_base,
+            cognitive_projection,
+        )
+        operational_memory, _, _, _ = self._partition_memory(
+            ranked_memory_records
+        )
+        operational = replace(
+            operational_base,
+            memory=tuple(operational_memory),
+        )
         model_projection = self._model_context(
             operational, cognitive_projection
+        )
+        pre_override_region_sizes = self._region_size_estimates(model_projection)
+        pre_override_total_size = self._estimate_tokens(model_projection)
+        unbounded_operational = replace(
+            operational_base,
+            memory=tuple(
+                item[0] for item in ranked_with_scores[: self.max_memory_records]
+            ),
+        )
+        unbounded_context_size = self._estimate_tokens(
+            self._model_context(
+                unbounded_operational,
+                cognitive_projection,
+                bound_action_results=False,
+            )
         )
         projection_trace: dict[str, Any] = {
             "model_context_regions": [
@@ -229,6 +294,9 @@ class ContextManager:
                 if cognitive_projection
                 else None
             ),
+            "estimated_context_tokens": pre_override_total_size,
+            "region_size_estimates": pre_override_region_sizes,
+            "unbounded_context_tokens_estimate": unbounded_context_size,
         }
         if self.model_projection_override is not None:
             model_projection, override_trace = self.model_projection_override(
@@ -271,6 +339,12 @@ class ContextManager:
             ],
             "ranked_memory_ids": [item[0].id for item in ranked_with_scores],
             "context_memory_ids": [item.id for item in ranked_memory_records],
+            "deduplicated_memory_ids": [
+                item.id for item in duplicate_records
+            ],
+            "budget_dropped_memory_ids": [
+                item.id for item in budget_dropped
+            ],
             "retrieval_scores": [
                 {
                     "id": record.id,
@@ -282,22 +356,37 @@ class ContextManager:
                     ranked_with_scores, start=1
                 )
             ],
-            "context_budget": 20,
+            "context_budget": self.max_memory_records,
+            "context_budget_tokens": self.total_context_budget,
+            "context_region_budgets": dict(self.region_context_budgets),
+            "candidate_memory_count": len(resource_relevant_records),
+            "deduplicated_memory_count": len(duplicate_records),
+            "selected_memory_count": len(ranked_memory_records),
+            "budget_dropped_memory_count": len(budget_dropped),
             **projection_trace,
         }
         return ContextBundle(
             operational, response_rendering, retrieval_trace
         )
 
-    @staticmethod
     def _model_context(
+        self,
         operational: OperationalContext,
         cognitive_projection: dict[str, str] | None,
+        *,
+        bound_action_results: bool = True,
     ) -> dict[str, Any]:
         """Project fine-grained runtime ontology into four stable model regions."""
 
         raw = operational.as_dict()
-        memories = raw["memory"]
+        memories = [
+            (
+                self._memory_context_for_model(record)
+                if bound_action_results
+                else self._memory_context(record)
+            )
+            for record in operational.memory
+        ]
         core_memory = [item for item in memories if item["scope"] == "core"]
         professional_memory = [
             item
@@ -356,7 +445,12 @@ class ContextManager:
                     ),
                 },
                 "token_budget": {
-                    "memory_records": 20,
+                    "estimated_total_context": self.total_context_budget,
+                    "regions": dict(self.region_context_budgets),
+                    "memory_records": self.max_memory_records,
+                    "large_action_result_excerpt_characters": (
+                        self.action_result_excerpt_characters
+                    ),
                     "model_output_tokens": "provider-configured",
                 },
                 "runtime": {
@@ -413,6 +507,178 @@ class ContextManager:
                     raw["system"].get("work_role_catalog", [])
                 ),
             },
+        }
+
+    def _select_memory_with_budget(
+        self,
+        ranked: list[tuple[MemoryRecord, float, dict[str, float]]],
+        operational_base: OperationalContext,
+        cognitive_projection: dict[str, str] | None,
+    ) -> tuple[list[MemoryRecord], list[MemoryRecord]]:
+        """Select ranked records by trial-projecting the real model context."""
+
+        selected: list[MemoryRecord] = []
+        dropped: list[MemoryRecord] = []
+        for record, _, _ in ranked:
+            if len(selected) >= self.max_memory_records:
+                dropped.append(record)
+                continue
+            trial = [*selected, record]
+            operational = replace(operational_base, memory=tuple(trial))
+            projection = self._model_context(
+                operational, cognitive_projection
+            )
+            region_sizes = self._region_size_estimates(projection)
+            if (
+                self._estimate_tokens(projection)
+                > self.total_context_budget
+                or any(
+                    region_sizes[region] > budget
+                    for region, budget in self.region_context_budgets.items()
+                )
+            ):
+                dropped.append(record)
+                continue
+            selected.append(record)
+        return selected, dropped
+
+    @classmethod
+    def _deduplicate_ranked(
+        cls,
+        ranked: list[tuple[MemoryRecord, float, dict[str, float]]],
+    ) -> tuple[
+        list[tuple[MemoryRecord, float, dict[str, float]]],
+        list[MemoryRecord],
+    ]:
+        selected: list[tuple[MemoryRecord, float, dict[str, float]]] = []
+        duplicates: list[MemoryRecord] = []
+        seen: set[tuple[str, ...]] = set()
+        for item in ranked:
+            record = item[0]
+            key = cls._memory_dedup_key(record)
+            if key in seen:
+                duplicates.append(record)
+                continue
+            seen.add(key)
+            selected.append(item)
+        return selected, duplicates
+
+    @classmethod
+    def _memory_dedup_key(cls, record: MemoryRecord) -> tuple[str, ...]:
+        family = (
+            "action_result"
+            if record.kind.endswith(".action_result")
+            else record.kind
+        )
+        metadata = record.metadata
+        resource = str(
+            metadata.get("resource_reference")
+            or metadata.get("source")
+            or metadata.get("artifact_ref")
+            or ""
+        )
+        if family == "action_result":
+            try:
+                payload = json.loads(record.content)
+            except (TypeError, json.JSONDecodeError):
+                payload = {}
+            capability = str(
+                metadata.get("capability_id")
+                or payload.get("capability_id")
+                or ""
+            )
+            status = str(
+                metadata.get("status") or payload.get("status") or ""
+            )
+            output_hash = str(metadata.get("output_sha256") or "")
+            if not output_hash and "output" in payload:
+                output_hash = cls._content_hash(
+                    json.dumps(
+                        payload.get("output"),
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    )
+                )
+            if output_hash:
+                return family, capability, status, resource, output_hash
+            request_id = str(metadata.get("request_id") or "")
+            if request_id:
+                return family, request_id
+        normalized = " ".join(record.content.split())
+        return family, resource, cls._content_hash(normalized)
+
+    def _memory_context_for_model(
+        self, record: MemoryRecord
+    ) -> dict[str, Any]:
+        context = self._memory_context(record)
+        if not record.kind.endswith(".action_result"):
+            return context
+        try:
+            payload = json.loads(record.content)
+        except (TypeError, json.JSONDecodeError):
+            payload = {"output": record.content}
+        output = payload.get("output")
+        serialized = self._serialized_output(output)
+        if len(serialized) <= self.action_result_excerpt_characters:
+            return context
+        payload["output"] = {
+            "projection": "bounded_excerpt",
+            "type": type(output).__name__,
+            "size_characters": len(serialized),
+            "sha256": self._content_hash(serialized),
+            "excerpt": serialized[: self.action_result_excerpt_characters],
+        }
+        context["content"] = json.dumps(
+            payload,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        context["metadata"]["context_projection"] = {
+            "full_payload_persisted": True,
+            "truncated": True,
+            "original_characters": len(serialized),
+            "sha256": self._content_hash(serialized),
+        }
+        return context
+
+    @staticmethod
+    def _serialized_output(value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        try:
+            return json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        except (TypeError, ValueError):
+            return str(value)
+
+    @staticmethod
+    def _content_hash(value: str) -> str:
+        return sha256(value.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def _estimate_tokens(cls, value: Any) -> int:
+        serialized = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
+        return max(1, ceil(len(serialized.encode("utf-8")) / 4))
+
+    @classmethod
+    def _region_size_estimates(
+        cls, model_context: dict[str, Any]
+    ) -> dict[str, int]:
+        return {
+            region: cls._estimate_tokens(model_context.get(region, {}))
+            for region in cls._REGIONS
         }
 
     def _legal_memory_candidates(

@@ -14,7 +14,16 @@ class RuntimeLoopIntegrationTests(unittest.TestCase):
     def test_direct_mode_write_read_final_answer_e2e(self):
         responses = [
             json.dumps(
-                {"type": "workflow", "workflow_id": "general_task"}
+                {
+                    "type": "assignment",
+                    "role_id": "developer",
+                    "workflow_id": "general_task",
+                    "requested_capabilities": [
+                        "filesystem.write",
+                        "filesystem.list",
+                        "filesystem.read",
+                    ],
+                }
             ),
             json.dumps(
                 {
@@ -174,7 +183,11 @@ class RuntimeLoopIntegrationTests(unittest.TestCase):
     def test_minimal_novel_workflow_uses_same_agent_abstraction(self):
         responses = [
             json.dumps(
-                {"type": "workflow", "workflow_id": "novel_writing"}
+                {
+                    "type": "assignment",
+                    "role_id": "author",
+                    "workflow_id": "novel_writing",
+                }
             ),
             json.dumps(
                 {
@@ -193,17 +206,21 @@ class RuntimeLoopIntegrationTests(unittest.TestCase):
                 )
                 self.assertEqual("novel draft ready", harness.run(process.id))
                 state = harness.runtime_state(process.id)
-                self.assertEqual("direct", state.mode)
-                self.assertIsNone(state.workflow_id)
-                self.assertIsNone(state.assignment_id)
-                self.assertEqual({"echo"}, set(state.allowed_capabilities))
+                self.assertEqual("workflow", state.mode)
+                self.assertEqual("novel_writing", state.workflow_id)
+                self.assertEqual("creation", state.workflow_state_id)
+                self.assertIsNotNone(state.assignment_id)
             finally:
                 harness.close()
 
     def test_workflow_memory_connects_two_disposable_agents(self):
         responses = [
             json.dumps(
-                {"type": "workflow", "workflow_id": "novel_writing"}
+                {
+                    "type": "assignment",
+                    "role_id": "author",
+                    "workflow_id": "novel_writing",
+                }
             ),
             json.dumps(
                 {
@@ -216,9 +233,6 @@ class RuntimeLoopIntegrationTests(unittest.TestCase):
                 }
             ),
             json.dumps({"type": "final", "content": "seed saved"}),
-            json.dumps(
-                {"type": "workflow", "workflow_id": "novel_writing"}
-            ),
             json.dumps({"type": "final", "content": "memory continued"}),
         ]
         with tempfile.TemporaryDirectory() as workspace:
@@ -241,26 +255,34 @@ class RuntimeLoopIntegrationTests(unittest.TestCase):
                 self.assertEqual("memory continued", harness.run(second.id))
 
                 contract = json.loads(
-                    supervisor.action_calls[4][1][0]["content"]
+                    supervisor.action_calls[3][1][0]["content"]
                 )
                 work = contract["context"]["work"]
                 mounted = [
                     *work["relevant_archive_and_artifacts"],
                     *work["recent_observations"],
                 ]
+                mounted_kinds = [record["kind"] for record in mounted]
                 self.assertTrue(
                     {
-                        "runtime.workflow_admission",
-                        "runtime.action_result",
                         "runtime.final_answer",
                         "workspace.assignment_started",
-                        "workspace.assignment_ended",
-                        "workspace.action_result",
-                    }.issubset({record["kind"] for record in mounted})
+                    }.issubset(set(mounted_kinds))
+                )
+                self.assertEqual(
+                    1,
+                    sum(
+                        kind.endswith(".action_result")
+                        for kind in mounted_kinds
+                    ),
+                )
+                self.assertNotIn(
+                    "workspace.assignment_ended",
+                    set(mounted_kinds),
                 )
                 self.assertNotIn("persona", contract["context"])
                 self.assertEqual(
-                    5,
+                    3,
                     len(
                         memory.retrieve(
                             scope="workflow:novel_writing:creative_memory"

@@ -43,3 +43,6 @@ New focused coverage:
 - `runtime/test_v6_invariant_scenarios.py`: four public-boundary V6 stories.
 - `integration/test_thin_core_context_projection.py`: Agent ownership, four-region
   model projection, Assignment cleanup, and experiment/core source boundaries.
+- `runtime/test_runtime_continuity.py`: disposable Process replacement,
+  identity-level binding/Assignment continuity, Context reconstruction, and the
+  explicit partial boundary of Runtime restart recovery.

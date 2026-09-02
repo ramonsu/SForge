@@ -116,7 +116,12 @@ class RuntimeState:
 
 @dataclass
 class WorkAssignment:
-    """One temporary relationship between a process and a Workspace."""
+    """One durable work relationship attached to one current process.
+
+    ``agent_process_id`` is the current attachment used for runtime ownership
+    checks and resumability. It is replaced when the same Identity resumes the
+    Assignment in a new disposable process; it is not creator provenance.
+    """
 
     agent_process_id: str
     identity_id: str
@@ -126,6 +131,7 @@ class WorkAssignment:
     grants: frozenset[str]
     id: str = field(default_factory=lambda: uuid4().hex)
     workflow_id: str | None = None
+    workflow_state_id: str | None = None
     status: Literal["active", "ended"] = "active"
     created_at: datetime = field(default_factory=utc_now)
     ended_at: datetime | None = None
@@ -139,6 +145,7 @@ class WorkAssignment:
             role_id=self.role_id,
             task_id=self.task_id,
             workflow_id=self.workflow_id,
+            workflow_state_id=self.workflow_state_id,
             grants=frozenset(self.grants),
             status=self.status,
             created_at=self.created_at,
@@ -154,6 +161,7 @@ class WorkAssignment:
             "role_id": self.role_id,
             "task_id": self.task_id,
             "workflow_id": self.workflow_id,
+            "workflow_state_id": self.workflow_state_id,
             "grants": sorted(self.grants),
             "status": self.status,
         }
@@ -303,6 +311,8 @@ class ResourceBindingAdmission:
     resource_id: str | None = None
     cognitive_policy_id: str | None = None
     profession_ids: tuple[str, ...] = ()
+    changed: bool = False
+    replayed: bool = False
     error: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
@@ -314,6 +324,8 @@ class ResourceBindingAdmission:
             "resource_id": self.resource_id,
             "cognitive_policy_id": self.cognitive_policy_id,
             "profession_ids": list(self.profession_ids),
+            "changed": self.changed,
+            "replayed": self.replayed,
             "error": self.error,
         }
 

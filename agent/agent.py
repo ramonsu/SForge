@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from typing import Any, Protocol
 
 from agent.decision_protocol import parse_decision_payload
@@ -83,6 +82,25 @@ class Agent:
                 "任何外部操作和认知环境装载都必须通过 Harness 接口交给 "
                 "RuntimeEngine 验证或执行"
             ),
+            "decision_rules": [
+                (
+                    "Do not request a CognitivePolicy or Profession that is "
+                    "already active in the current Context."
+                ),
+                (
+                    "After a successful or unchanged admission observation, "
+                    "continue with the next unmet part of the user request."
+                ),
+                (
+                    "Use WorkAssignmentRequest to enter a Workspace, assume a "
+                    "Role, or start a Workflow for work. Include role_id, "
+                    "workspace_id and workflow_id in that one request."
+                ),
+                (
+                    "Use WorkflowRequest only to transition an already active "
+                    "WorkAssignment along one declared Workflow edge."
+                ),
+            ],
             "output_protocol": (
                 "Return exactly one valid JSON object matching the Decision "
                 "schema. Do not wrap the JSON in Markdown fences. Do not "
@@ -106,9 +124,9 @@ class Agent:
                 },
                 "workflow": {
                     "type": "workflow",
-                    "workflow_id": "visible workflow id",
-                    "target_state_id": "optional target state id",
-                    "transition_condition": "optional declared edge condition",
+                    "workflow_id": "active Assignment workflow id",
+                    "target_state_id": "required transition target state id",
+                    "transition_condition": "required declared edge condition",
                     "request_id": "optional id",
                 },
                 "resource_binding": {
@@ -120,9 +138,9 @@ class Agent:
                 },
                 "work_assignment": {
                     "type": "assignment",
-                    "role_id": "visible work role id",
-                    "workspace_id": "visible workspace id",
-                    "workflow_id": "optional visible workflow id",
+                    "role_id": "requested visible work role id",
+                    "workspace_id": "requested visible workspace id",
+                    "workflow_id": "visible workflow id when work uses one",
                     "target_state_id": "optional workflow initial state",
                     "requested_capabilities": [
                         "optional subset of capabilities offered by the workflow state"
@@ -182,9 +200,9 @@ class Agent:
             or not self._process.host_process_id
         ):
             raise InvalidAgentStateError("Agent 没有运行中的推理进程")
-        draft = self._sanitize_presentation_draft(
-            str(response_rendering_context.get("draft_answer", ""))
-        )
+        draft = str(
+            response_rendering_context.get("draft_answer", "")
+        ).strip()
         persona = dict(response_rendering_context.get("persona") or {})
         persona.pop("boundary", None)
         preferences = [
@@ -238,46 +256,6 @@ class Agent:
         except Exception:
             return RenderedResponse(draft)
         return RenderedResponse(response.content.strip() or draft, response.usage)
-
-    @staticmethod
-    def _sanitize_presentation_draft(draft: str) -> str:
-        """Remove runtime-only causal-treatment metadata before rendering."""
-
-        value = re.sub(r"\b(?:INTJ|ENFP)\b", "", draft, flags=re.IGNORECASE)
-        value = re.sub(
-            r"\bcognitive\s*policy\b|认知策略",
-            "reasoning approach",
-            value,
-            flags=re.IGNORECASE,
-        )
-        value = re.sub(
-            r"\b(?:raw|effective)?\s*[a-z_]+_?weight\b"
-            r"\s*(?:\([^)]*\)|[:=]?\s*\d+(?:\.\d+)?)?",
-            "configured emphasis",
-            value,
-            flags=re.IGNORECASE,
-        )
-        value = re.sub(
-            r"\bpolicy[_\s-]*strength\b\s*[:=]?\s*\d*(?:\.\d+)?",
-            "configured emphasis",
-            value,
-            flags=re.IGNORECASE,
-        )
-        value = re.sub(
-            r"\bretrieval[_\s-]*(?:rank|priority)\b",
-            "evidence selection",
-            value,
-            flags=re.IGNORECASE,
-        )
-        value = re.sub(
-            r"\b(?:higher[-\s]?ranked|ranked\s+higher)\b|"
-            r"(?:更高|较高)(?:的)?(?:检索)?(?:排名|优先级)|排序高于",
-            "selected",
-            value,
-            flags=re.IGNORECASE,
-        )
-        value = re.sub(r"[ \t]{2,}", " ", value)
-        return value.strip()
 
     @staticmethod
     def _parse_decision(raw: str) -> AgentDecision:

@@ -5,7 +5,12 @@ from dataclasses import FrozenInstanceError
 from pathlib import Path
 
 from harness.memory_manager import MemoryRecord
-from harness.models import ActionRequest, TaskSpec, WorkflowRequest
+from harness.models import (
+    ActionRequest,
+    TaskSpec,
+    WorkAssignmentRequest,
+    WorkflowRequest,
+)
 from harness.persona import load_persona
 from tests.support.runtime_factory import build_harness, make_persona
 
@@ -130,8 +135,11 @@ class PersonaBoundaryTests(unittest.TestCase):
                 direct = harness.create_agent("direct")
                 workflow = harness.create_agent("workflow", "novel_writing")
                 self.assertEqual("direct", harness.runtime_state(direct.id).mode)
-                harness.request_workflow(
-                    workflow.id, WorkflowRequest("novel_writing")
+                harness.request_work_assignment(
+                    workflow.id,
+                    WorkAssignmentRequest(
+                        "author", workflow_id="novel_writing"
+                    ),
                 )
                 workflow_state = harness.runtime_state(workflow.id)
                 self.assertEqual("workflow", workflow_state.mode)
@@ -204,15 +212,15 @@ class PersonaBoundaryTests(unittest.TestCase):
             finally:
                 harness.close()
 
-    def test_presentation_never_receives_internal_policy_metadata(self):
-        internal_draft = (
-            "Under ENFP CognitivePolicy novelty_weight=0.85 and "
-            "retrieval_rank=1, choose option_b."
+    def test_presentation_preserves_user_visible_resource_identifiers(self):
+        draft = (
+            "CognitivePolicy INTJ and Profession software_engineering "
+            "are active."
         )
         with tempfile.TemporaryDirectory() as workspace:
             harness, supervisor, _, _ = build_harness(
                 workspace,
-                [json.dumps({"type": "final", "content": internal_draft})],
+                [json.dumps({"type": "final", "content": draft})],
             )
             try:
                 process = harness.create_agent("question")
@@ -221,12 +229,9 @@ class PersonaBoundaryTests(unittest.TestCase):
                     supervisor.presentation_calls[0][1][1]["content"]
                 )
                 for value in (answer, rendering["draft"]):
-                    normalized = value.casefold()
-                    self.assertNotIn("enfp", normalized)
-                    self.assertNotIn("cognitivepolicy", normalized)
-                    self.assertNotIn("novelty_weight", normalized)
-                    self.assertNotIn("retrieval_rank", normalized)
-                self.assertIn("option_b", answer)
+                    self.assertIn("CognitivePolicy", value)
+                    self.assertIn("INTJ", value)
+                    self.assertIn("software_engineering", value)
             finally:
                 harness.close()
 
